@@ -1,0 +1,98 @@
+RAPPORT — VALIDATION INDEPENDANTE DE bebba-testing (BLOC 2)
+================================================================
+Date : 2026-09-17
+Objet : .opencode/skills/bebba-testing/SKILL.md
+Statut : validation seule ; aucun fichier modifie ; aucun commit ; aucun push.
+
+----------------------------------------------------------------
+ETAT ACTUEL
+----------------------------------------------------------------
+- Lignes : 453
+- Caracteres : 10221
+- SHA256 : 521e6ae927b60d2189c563a4aef043593acfb780cb0a73f83d543fa854034500
+- Git status : ?? .opencode/ (repertoire non suivi, inchange)
+- Dernier commit : 7825664f8ec40e3141cbe1d753e05d2cd4773b36 (HEAD inchange)
+
+----------------------------------------------------------------
+VALIDATIONS (preuves reelles)
+----------------------------------------------------------------
+STRUCTURE
+- Frontmatter YAML valide : PASS — yaml.safe_load OK (script de controle).
+- Champ name : PASS — "bebba-testing", identique au dossier skills/bebba-testing/.
+- Champ description : PASS — presente et coherente (tests/validation).
+- Markdown structure : PASS — 26 sections "## N." ordonnees (lignes 13..447).
+- Fences equilibrees : PASS — 12 occurrences : 6 ouvertes (107,122,133,278,284,311)
+  et 6 fermees (118,126,137,280,286,313).
+- Aucune troncature : PASS — fichier termine par "- STOP.\n" (od -c).
+- Section STOP finale : PASS — "## 26. STOP" (ligne 447).
+
+CONTENU OBLIGATOIRE (24/24)
+1  objectif des tests .......... PASS (s.1, "Objectif : ...")
+2  Evidence First ............. PASS (s.2 "preuve observable")
+3  tests unitaires ............ PASS (s.6)
+4  tests d'integration ........ PASS (s.7)
+5  tests API .................. PASS (s.8)
+6  tests frontend ............. PASS (s.9)
+7  fonctionnels metier BEBBA .. PASS (s.10)
+8  roles Client/Cuisine/Livreur/Administration PASS (s.11)
+9  auth + autorisation ........ PASS (s.12)
+10 tests commandes ............ PASS (s.13)
+11 statuts received->preparing->ready->waiting_for_driver->delivering->delivered
+   + cancelled ............... PASS (s.5 l.123,125 ; s.14 l.279,285,291)
+12 separation livraison/encaissement PASS (s.15, l.299)
+13 PaymentStatus to_collect|paid PASS (s.16, l.312)
+14 stocks + ingredients ....... PASS (s.17)
+15 trackingToken (+tracking_token) PASS (s.18, l.346)
+16 donnees invalides/cas limites PASS (s.19)
+17 idempotence/doublons ....... PASS (s.20)
+18 regression ................. PASS (s.4)
+19 migration si pertinent ..... PASS (s.21)
+20 validation independante .... PASS (s.22)
+21 preuve avant conclusion .... PASS (s.23)
+22 modification minimale ...... PASS (s.24)
+23 reporting .................. PASS (s.25)
+24 STOP ....................... PASS (s.26)
+
+COHERENCE AVEC LES SKILLS DE REFERENCE
+- bebba-workflow : PASS — chaine BLOC->AUDIT->PREUVE->STOP->CORRECTION->VALIDATION->
+  COMMIT->VERIFICATION GITHUB->STOP respectee ; commit uniquement sur autorisation
+  explicite (l.221 du workflow) ; bebba-testing ne mentionne ni commit ni push (grep 0).
+- bebba-database : PASS — to_collect distingue, livraison/encaissement 2 evenements,
+  stocks coherents : regles reprises s.15/16/17 sans contradiction.
+- bebba-security : PASS — memes roles (Client, Cuisine/KDS, Livreur,
+  Administration / Super Admin) ; tests d'autorisation s.12 coherents.
+- bebba-audit : PASS — audit en lecture seule respecte ; pas de contradiction.
+
+DETECTION OPENCODE 1.18.31
+- Detection : PASS — la skill est retrouvee par nom via le mecanisme de skill.
+- Observation (non bloquante) : l'injection en session provient d'un cache de
+  session (version pre-correction) ; le fichier sur disque (453 lignes,
+  sha 521e6ae9...) est la source de verite, recharge dans un processus neuf.
+
+AUCUNE MODIFICATION
+- sha256 du fichier inchange ; wc inchange ; git status inchange ;
+  aucun fichier suivi modifie ; HEAD inchange.
+
+----------------------------------------------------------------
+ANOMALIES RESTANTES
+----------------------------------------------------------------
+Aucune anomalie bloquante.
+Observation non bloquante (nee de l'environnement, pas du fichier) :
+cache de session OpenCode pouvant servir un contenu anterieur a la correction ;
+sans effet sur le fichier sur disque ; recharge au prochain processus.
+
+----------------------------------------------------------------
+CONCLUSION
+----------------------------------------------------------------
+VALIDATION PASS — bebba-testing est conforme et aucune anomalie bloquante
+n'a été détectée.
+
+----------------------------------------------------------------
+STOP — validation indépendante de bebba-testing terminée,
+aucun fichier modifié, aucun commit effectué.
+==== OPENCODE OUTPUT METADATA ====
+prompt: validation-independante-bebba-testing
+run_date: 2026-09-17T00:26:47+0100
+report_name: opencode-output-2026-09-17-002635
+repo: zoubeirsneni-lgtm/audits
+branch: main
