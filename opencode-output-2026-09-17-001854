@@ -1,0 +1,11 @@
+PROBE_STDOUT line1
+PROBE_STDERR line1
+PROBE_STDOUT line2
+
+==== OPENCODE OUTPUT METADATA ====
+prompt: __test_probe
+run_date: 2026-09-17T00:18:55+0100
+report_name: opencode-output-2026-09-17-001854
+repo: zoubeirsneni-lgtm/audits
+branch: main
+opencode_exit: 7
