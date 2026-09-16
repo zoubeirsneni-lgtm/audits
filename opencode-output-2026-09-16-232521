@@ -1,0 +1,705 @@
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mSkill "bebba-audit"
+[0m→ [0mRead .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0mls -la .opencode/skills/bebba-migration/ && echo "---WC---" && wc -l -c .opencode/skills/bebba-migration/SKILL.md
+total 12
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:20 .
+drwxr-xr-x 9 dell_pro dell_pro 4096 Sep 16 19:22 ..
+-rw-r--r-- 1 dell_pro dell_pro 2186 Sep 16 19:20 SKILL.md
+---WC---
+  89 2186 .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0msha256sum .opencode/skills/bebba-migration/SKILL.md
+4b75d12999864dc3b07d84fafc2ce6984419d50f353eb2f432bf400421f58c08  .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0mgit status --short; echo "---BRANCH---"; git branch --show-current; echo "---BRANCHES---"; git branch -a
+?? .opencode/
+---BRANCH---
+main
+---BRANCHES---
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
+[0m
+[0m$ [0mgit log --oneline --all -- .opencode/skills/bebba-migration/SKILL.md; echo "---LOG-ANY---"; git log --oneline --all -- .opencode/skills/ 2>/dev/null | head -50
+---LOG-ANY---
+[0m
+[0m$ [0mls -la .opencode/ && echo "---SKILLS---" && ls -la .opencode/skills/ && echo "---BACKUPS---" && find .opencode -name "*bak*" -o -name "*.old" -o -name "*.save" -o -name "*~" 2>/dev/null
+total 48
+drwxr-xr-x  5 dell_pro dell_pro  4096 Sep 16 18:16 .
+drwxr-xr-x 10 dell_pro dell_pro  4096 Sep 16 16:52 ..
+-rw-r--r--  1 dell_pro dell_pro    63 Sep 16 16:54 .gitignore
+drwxr-xr-x 29 dell_pro dell_pro  4096 Sep 16 16:55 node_modules
+-rw-r--r--  1 dell_pro dell_pro 14634 Sep 16 16:55 package-lock.json
+-rw-r--r--  1 dell_pro dell_pro    65 Sep 16 16:55 package.json
+drwxr-xr-x  2 dell_pro dell_pro  4096 Sep 16 23:24 prompts
+-rwxr-xr-x  1 dell_pro dell_pro  1089 Sep 16 22:59 run-prompt.sh
+drwxr-xr-x  9 dell_pro dell_pro  4096 Sep 16 19:22 skills
+---SKILLS---
+total 36
+drwxr-xr-x 9 dell_pro dell_pro 4096 Sep 16 19:22 .
+drwxr-xr-x 5 dell_pro dell_pro 4096 Sep 16 18:16 ..
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:23 bebba-audit
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:17 bebba-database
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:20 bebba-migration
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:18 bebba-security
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:21 bebba-testing
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:18 bebba-wordpress
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 17:16 bebba-workflow
+---BACKUPS---
+[0m
+[0m$ [0mgit log --oneline --all | head -30; echo "---STASH---"; git stash list; echo "---REFLOG---"; git reflog | head -20
+7825664 chore: freeze firestore version before wordpress migration
+36254b8 refactor: standardize inventory and order models
+0d18ce4 feat(security): implement data masking for public order tracking
+24bea1a build: tighten security for server and Firestore
+97680bd chore(security): harden firestore rules
+5e29ad4 feat(admin): implement demo data reset functionality
+2ec575b refactor(db, auth): migrate to Firebase modular SDK
+b505c5f refactor: migrate to Firebase Admin SDK
+a2a1f3e refactor: improve order options handling and logout flow
+99a9afc feat(db): migrate to Firestore and add idempotency
+50dd215 feat(checkout): add back button and auto-fill user data
+5ff4d5a chore: ignore all files in aistudio directory
+8b6c8cd fix: update order status and revert delivery record
+1eaeec8 feat: implement client authentication and role restrictions
+763d254 feat: enforce delivery status for payment collection
+6a88e64 refactor(auth): restrict payment status modifications
+ab173e9 feat(auth): enable client login and add profile support
+3a9506e refactor(db): remove obsolete test drivers and orders
+2187988 feat: restrict order assignment to active drivers
+c581d86 feat: implement atomic driver account creation
+d38e460 feat: enforce ingredient status checks
+b73155a feat: allow kitchen staff to manage ingredients
+25f9117 refactor: optimize data fetching and ingredient lists
+6fbaf70 feat(order): implement secure order lookup by identifier
+71f9f2e feat(admin): implement driver assignment for orders
+d4a3c60 feat: add support for URL-based order tracking
+b480a8f feat: add order delivery validation and idempotency
+994569f feat: implement stock management and validation
+c9d0385 feat(auth): implement staff authentication system
+a8e5f9e refactor(ui): improve touch target sizing and responsiveness
+---STASH---
+---REFLOG---
+7825664 HEAD@{0}: commit: chore: freeze firestore version before wordpress migration
+36254b8 HEAD@{1}: clone: from https://github.com/zoubeirsneni-lgtm/bhf.git
+[0m
+[0m$ [0mgit show origin/main:.opencode/skills/bebba-migration/SKILL.md 2>&1 | head -5; echo "---
+
+---"; git ls-tree -r origin/main --name-only 2>/dev/null | grep -i skill
+fatal: path '.opencode/skills/bebba-migration/SKILL.md' exists on disk, but not in 'origin/main'
+---
+
+---
+[0m
+[0m→ [0mRead .opencode/.gitignore
+[0m
+[0m$ [0mgit ls-files .opencode/ | head; echo "---tracked-count---"; git ls-files .opencode/ | wc -l; echo "---HEAD-tree---"; git ls-tree -r HEAD --name-only | grep -i -E "skill|opencode" | head
+---tracked-count---
+0
+---HEAD-tree---
+[0m
+[0m$ [0mfind / -name "SKILL.md" -path "*bebba*" 2>/dev/null; echo "---HOME-OPCODE---"; ls -la ~/.config/opencode/skills/ 2>/dev/null; find ~ -name "*bebba*" 2>/dev/null | head -20
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 120000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mgit fsck --dangling 2>/dev/null | head -20; echo "---BLOCKS---"; git cat-file --batch-all-objects --batch-check 2>/dev/null | grep -c blob; echo "---grep-blobs----"; for b in $(git cat-file --batch-all-objects --batch-check | awk '$2=="blob"{print $1}'); do s=$(git cat-file blob $b 2>/dev/null | grep -c "destination.wp_user.ID\|bebba-migration"); if [ "$s" -ne 0 ]; then echo "MATCH $b"; fi; done 2>/dev/null | head
+---BLOCKS---
+221
+---grep-blobs----
+[0m
+[0m$ [0mfind /home/dell_pro /tmp /home/dell_pro/projects -name "SKILL.md" 2>/dev/null; echo "---bebba-named-files---"; find /home/dell_pro /tmp -iname "*bebba*" -type f 2>/dev/null | grep -v node_modules | head -40
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-testing/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-wordpress/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-security/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-workflow/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-database/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-audit/SKILL.md
+/home/dell_pro/projects/bhf/node_modules/dotenv/skills/dotenvx/SKILL.md
+/home/dell_pro/projects/bhf/node_modules/dotenv/skills/dotenv/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-testing/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-wordpress/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-security/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-workflow/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-database/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md
+/home/dell_pro/projects/bhf/.opencode/skills/bebba-audit/SKILL.md
+/home/dell_pro/projects/bhf/node_modules/dotenv/skills/dotenvx/SKILL.md
+/home/dell_pro/projects/bhf/node_modules/dotenv/skills/dotenv/SKILL.md
+---bebba-named-files---
+[0m
+[0m$ [0mgrep -n '`' .opencode/skills/bebba-migration/SKILL.md; echo "---COUNT---"; grep -c '`' .opencode/skills/bebba-migration/SKILL.md
+18:- migration de `db.json` ;
+86:```text
+---COUNT---
+2
+[0m
+[0m$ [0mnode -e "const fs=require('fs');const s=fs.readFileSync('.opencode/skills/bebba-migration/SKILL.md','utf8');const m=s.match(/^---\r?\n([\s\S]*?)\r?\n---/);const yaml=m?m[1]:null;console.log('hasFrontmatter:',!!m);console.log('---YAML---');console.log(yaml)" 2>&1; echo "=====PARSE====="; node -e "const fs=require('fs');const s=fs.readFileSync('.opencode/skills/bebba-migration/SKILL.md','utf8');const m=s.match(/^---\r?\n([\s\S]*?)\r?\n---/);let out;try{const yaml=m[1];out={};const lines=yaml.split(/\r?\n/);let cur=null,acc='';for(const l of lines){if(/^[a-zA-Z-]+:/.test(l)){if(cur){out[cur]=acc.trim();}cur=l.split(':')[0];acc=l.replace(/^[^:]*:/,'').trim();if(!/:$/.test(l)&&!acc.startsWith('>')){out[cur]=acc.replace(/^['\"]+/,'').replace(/['\"]+$/,'');cur=null;}}else if(cur){acc+=l;}}if(cur)out[cur]=acc.trim();}catch(e){out=e.message}console.log(JSON.stringify(out,null,2))"
+hasFrontmatter: true
+---YAML---
+name: bebba-migration
+description: >
+  Use when migrating BEBBA data, application components, database structures,
+  WordPress data, WooCommerce data, legacy JSON data, or systems between
+  environments. Use for mapping, transformation, import, export, validation,
+  rollback, and migration planning. Avoid when no BEBBA migration is involved.
+=====PARSE=====
+{
+  "name": "bebba-migration",
+  "description": ">  Use when migrating BEBBA data, application components, database structures,  WordPress data, WooCommerce data, legacy JSON data, or systems between  environments. Use for mapping, transformation, import, export, validation,  rollback, and migration planning. Avoid when no BEBBA migration is involved."
+}
+[0m
+[0m$ [0mls node_modules 2>/dev/null | head; echo "---yaml available?---"; ls node_modules/yaml 2>/dev/null && echo YES || echo NO
+@babel
+@esbuild
+@firebase
+@google
+@google-cloud
+@grpc
+@isaacs
+@jridgewell
+@js-sdsl
+@napi-rs
+---yaml available?---
+NO
+[0m
+[0m$ [0mwhich opencode; opencode --version 2>/dev/null; ls ~/.opencode/bin 2>/dev/null; ls /usr/local/bin | grep -i opencode 2>/dev/null
+/home/dell_pro/.opencode/bin/opencode
+1.18.31
+opencode
+[0m
+[0m$ [0mfind node_modules -maxdepth 3 -type d -name "js-yaml" 2>/dev/null | head; find .opencode/node_modules -maxdepth 2 -type d 2>/dev/null | head -20
+.opencode/node_modules
+.opencode/node_modules/cross-spawn
+.opencode/node_modules/cross-spawn/lib
+.opencode/node_modules/find-my-way-ts
+.opencode/node_modules/find-my-way-ts/dist
+.opencode/node_modules/find-my-way-ts/QueryString
+.opencode/node_modules/find-my-way-ts/src
+.opencode/node_modules/ini
+.opencode/node_modules/ini/lib
+.opencode/node_modules/@ai-sdk
+.opencode/node_modules/@ai-sdk/provider
+.opencode/node_modules/json-schema
+.opencode/node_modules/json-schema/lib
+.opencode/node_modules/effect
+.opencode/node_modules/effect/dist
+.opencode/node_modules/effect/src
+.opencode/node_modules/zod
+.opencode/node_modules/zod/v3
+.opencode/node_modules/zod/mini
+.opencode/node_modules/zod/locales
+[0m
+[0m$ [0mopencode --help 2>&1 | head -40
+⠀                                ▄     
+█▀▀█ █▀▀█ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█ █▀▀█ █▀▀█
+█  █ █  █ █▀▀▀ █  █ █    █  █ █  █ █▀▀▀
+▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+
+Commands:
+  opencode completion          generate shell completion script
+  opencode acp                 start ACP (Agent Client Protocol) server
+  opencode mcp                 manage MCP (Model Context Protocol) servers
+  opencode [project]           start opencode tui                                          [default]
+  opencode attach <url>        attach to a running opencode server
+  opencode run [message..]     run opencode with a message
+  opencode debug               debugging and troubleshooting tools
+  opencode providers           manage AI providers and credentials                   [aliases: auth]
+  opencode agent               manage agents
+  opencode upgrade [target]    upgrade opencode to the latest or a specific version
+  opencode uninstall           uninstall opencode and remove all related files
+  opencode serve               starts a headless opencode server
+  opencode web                 start opencode server and open web interface
+  opencode models [provider]   list all available models
+  opencode stats               show token usage and cost statistics
+  opencode export [sessionID]  export session data as JSON
+  opencode import <file>       import session data from JSON file or URL
+  opencode github              manage GitHub agent
+  opencode pr <number>         fetch and checkout a GitHub PR branch, then run opencode
+  opencode session             manage sessions
+  opencode plugin <module>     install plugin and update config                      [aliases: plug]
+  opencode db                  database tools
+
+Positionals:
+  project  path to start opencode in                                                        [string]
+
+Options:
+  -h, --help          show help                                                            [boolean]
+  -v, --version       show version number                                                  [boolean]
+      --print-logs    print logs to stderr                                                 [boolean]
+      --log-level     log level                 [string] [choices: "DEBUG", "INFO", "WARN", "ERROR"]
+      --pure          run without external plugins                                         [boolean]
+      --port          port to listen on                                        [number] [default: 0]
+      --hostname      hostname to listen on                          [string] [default: "127.0.0.1"]
+[0m
+[0m$ [0mopencode debug --help 2>&1 | head -30
+opencode debug
+
+debugging and troubleshooting tools
+
+Commands:
+  opencode debug config        show resolved configuration
+  opencode debug lsp           LSP debugging utilities
+  opencode debug rg            ripgrep debugging utilities
+  opencode debug file          file system debugging utilities
+  opencode debug scrap         list all known projects
+  opencode debug skill         list all available skills
+  opencode debug snapshot      snapshot debugging utilities
+  opencode debug startup       print startup timing
+  opencode debug agent <name>  show agent configuration details
+  opencode debug v2            debug v2 catalog and built-in plugins
+  opencode debug info          show debug information
+  opencode debug paths         show global paths (data, config, cache, state)
+  opencode debug wait          wait indefinitely (for debugging)
+
+Options:
+  -h, --help        show help                                                              [boolean]
+  -v, --version     show version number                                                    [boolean]
+      --print-logs  print logs to stderr                                                   [boolean]
+      --log-level   log level                   [string] [choices: "DEBUG", "INFO", "WARN", "ERROR"]
+      --pure        run without external plugins                                           [boolean]
+[0m
+[0m$ [0mopencode debug skill 2>&1 | grep -i -A3 -B1 "bebba-migration"
+{
+    "name": "bebba-migration",
+    "description": "Use when migrating BEBBA data, application components, database structures, WordPress data, WooCommerce data, legacy JSON data, or systems between environments. Use for mapping, transformation, import, export, validation, rollback, and migration planning. Avoid when no BEBBA migration is involved.\n",
+    "location": "/home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md",
+    "content": "\n# BEBBA Migration\n\n## 1. Purpose\n\nCette skill encadre toute migration du projet BEBBA Healthy Food.\n\nElle couvre notamment :\n\n- migration de `db.json` ;\n- migration vers MySQL ;\n- migration vers WordPress ;\n- migration vers WooCommerce ;\n- migration de données clients ;\n- migration de produits ;\n- migration de commandes ;\n- migration des ingrédients ;\n- migration des stocks ;\n- migration des livreurs ;\n- migration des utilisateurs ;\n- import/export ;\n- transformation de données ;\n- synchronisation entre environnements.\n\n---\n\n## 2. Migration First Requires an Inventory\n\nAvant toute migration réelle :\n\n1. identifier la source ;\n2. identifier la destination ;\n3. inventorier les données ;\n4. identifier les relations ;\n5. identifier les contraintes ;\n6. identifier les champs obligatoires ;\n7. identifier les données historiques ;\n8. identifier les données incompatibles ;\n9. identifier les doublons ;\n10. identifier les données qui ne doivent pas être migrées.\n\nNe jamais commencer un import réel sur la seule base d'un schéma supposé.\n\n---\n\n## 3. Source of Truth\n\nPour chaque migration, préciser explicitement :\n\n- source de vérité avant migration ;\n- source de vérité pendant la préparation ;\n- destination prévue ;\n- moment où la destination devient la nouvelle source de vérité.\n\nNe jamais considérer une destination comme correcte simplement parce que\nl'import s'est terminé sans erreur.\n\n---\n\n## 4. Mapping\n\nChaque entité migrée doit disposer d'un mapping clair.\n\nPour chaque champ important, déterminer :\n\n- source ;\n- destination ;\n- type source ;\n- type destination ;\n- transformation ;\n- valeur par défaut éventuelle ;\n- traitement des valeurs nulles ;\n- traitement des valeurs invalides ;\n- conservation ou non.\n\nExemple :\n\n```text\nsource.customer.id\n        ↓\ndestination.wp_user.ID\n"
+  },
+  {
+[0m
+[0m$ [0mfor s in bebba-database bebba-workflow bebba-security bebba-testing bebba-wordpress bebba-audit; do echo "=== $s ==="; wc -l -c .opencode/skills/$s/SKILL.md; echo "--- backticks lines ---"; grep -n '```' .opencode/skills/$s/SKILL.md | head -8; sets=$(grep -c '`' .opencode/skills/$s/SKILL.md); echo "single-backtick count: $sets"; done
+=== bebba-database ===
+ 250 6932 .opencode/skills/bebba-database/SKILL.md
+--- backticks lines ---
+single-backtick count: 2
+=== bebba-workflow ===
+ 415 9889 .opencode/skills/bebba-workflow/SKILL.md
+--- backticks lines ---
+189:```text
+193:```
+197:```text
+201:```
+237:```text
+239:```
+279:```text
+287:```
+single-backtick count: 26
+=== bebba-security ===
+ 327 7252 .opencode/skills/bebba-security/SKILL.md
+--- backticks lines ---
+single-backtick count: 3
+=== bebba-testing ===
+ 100 2057 .opencode/skills/bebba-testing/SKILL.md
+--- backticks lines ---
+90:```text
+single-backtick count: 4
+=== bebba-wordpress ===
+ 308 7169 .opencode/skills/bebba-wordpress/SKILL.md
+--- backticks lines ---
+single-backtick count: 4
+=== bebba-audit ===
+ 137 2832 .opencode/skills/bebba-audit/SKILL.md
+--- backticks lines ---
+132:```text
+single-backtick count: 1
+[0m
+[0m$ [0mopencode debug skill 2>&1 > /tmp/opencode/skills.json; node -e "const d=require('/tmp/opencode/skills.json');console.log('total skills:',d.length);d.forEach(s=>console.log(s.name, '->', s.location, '| len=', s.content.length))"
+total skills: 8
+customize-opencode -> <built-in> | len= 16060
+bebba-audit -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-audit/SKILL.md | len= 2427
+bebba-migration -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md | len= 1802
+bebba-security -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-security/SKILL.md | len= 6775
+bebba-workflow -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-workflow/SKILL.md | len= 9147
+bebba-wordpress -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-wordpress/SKILL.md | len= 6646
+bebba-database -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-database/SKILL.md | len= 6426
+bebba-testing -> /home/dell_pro/projects/bhf/.opencode/skills/bebba-testing/SKILL.md | len= 1647
+[0m
+[0m$ [0mfor s in bebba-audit bebba-testing bebba-security bebba-wordpress bebba-database; do echo "===== $s TAIL ====="; tail -6 .opencode/skills/$s/SKILL.md; echo; done
+===== bebba-audit TAIL =====
+```text
+règle métier
+vs
+implémentation technique
+vs
+comportement observé
+
+===== bebba-testing TAIL =====
+→ préparation
+→ ready
+→ waiting_for_driver
+→ attribution livreur
+→ delivering
+→ delivered
+
+===== bebba-security TAIL =====
+À la fin d'un bloc de sécurité :
+
+- ne pas lancer automatiquement une autre correction ;
+- présenter les preuves ;
+- signaler les limites ;
+- STOP.
+
+===== bebba-wordpress TAIL =====
+À la fin d'un bloc WordPress :
+
+- ne pas lancer automatiquement un autre bloc ;
+- présenter les preuves ;
+- signaler les incertitudes ;
+- STOP.
+
+===== bebba-database TAIL =====
+À la fin d'un bloc de travail database :
+
+- ne pas enchaîner automatiquement une autre modification ;
+- présenter les preuves obtenues ;
+- signaler les éléments restant à vérifier ;
+- STOP.
+[0m
+[0m$ [0mgit log --oneline --all -- .opencode/ 2>/dev/null; echo "---any-tracked-skills-anywhere---"; git log --all --oneline --name-only 2>/dev/null | grep -i "skill\|opencode" | head
+---any-tracked-skills-anywhere---
+[0m
+[0m$ [0mcd .opencode/skills; for k in "to_collect" "paid" "received" "preparing" "ready" "waiting_for_driver" "delivering" "delivered" "cancelled" "stock" "historique" "tracking" "rôle" "Client" "Livreur" "Cuisine" "Administration" "wp_user" "wc_"; do echo "### $k"; rg -l "$k" bebba-*/SKILL.md 2>/dev/null || echo "(none)"; done
+### to_collect
+(none)
+### paid
+(none)
+### received
+(none)
+### preparing
+(none)
+### ready
+(none)
+### waiting_for_driver
+(none)
+### delivering
+(none)
+### delivered
+(none)
+### cancelled
+(none)
+### stock
+(none)
+### historique
+(none)
+### tracking
+(none)
+### rôle
+(none)
+### Client
+(none)
+### Livreur
+(none)
+### Cuisine
+(none)
+### Administration
+(none)
+### wp_user
+(none)
+### wc_
+(none)
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills && rg -i "stock" bebba-migration/SKILL.md; echo "---rc=$?---"; ls
+/bin/bash: line 1: rg: command not found
+---rc=127---
+bebba-audit
+bebba-database
+bebba-migration
+bebba-security
+bebba-testing
+bebba-wordpress
+bebba-workflow
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills && rg -i -l "deliver|waiting_for_driver|preparing|to_collect|paid|stock|historique|tracking|client|livreur|cuisine|admin" . 2>&1 | head -30
+/bin/bash: line 1: rg: command not found
+[0m
+[0m✱ [0mGrep "to_collect|paid|received|preparing|waiting_for_driver|delivering|delivered|cancelled"[90m in .opencode/skills · 8 matches[0m
+[0m✱ [0mGrep "stock|stock|historique|tracking"[90m in .opencode/skills · 22 matches[0m
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills && for s in bebba-database bebba-workflow bebba-security bebba-testing bebba-wordpress; do echo "===== $s — headings ====="; grep -n "^## \|^### " $s/SKILL.md; done
+===== bebba-database — headings =====
+12:## 1. Purpose
+40:## 2. Evidence First
+60:## 3. Analyse avant modification
+77:## 4. Intégrité des données
+95:## 5. Transactions
+114:## 6. Conventions BEBBA
+138:## 7. Migration de données
+156:## 8. Validation
+176:## 9. Sauvegarde et rollback
+190:## 10. Scope
+206:## 11. Minimal Change
+221:## 12. Reporting
+243:## 13. STOP
+===== bebba-workflow — headings =====
+14:## Mission
+28:## 1. Principe fondamental
+57:## 2. Définition du BLOC
+83:## 3. MODE AUDIT
+114:## 4. PREUVE
+135:## 5. CORRECTION
+159:## 6. VALIDATION
+183:## 7. GIT
+219:## 8. COMMITS
+253:## 9. PUSH
+272:## 10. GitHub comme source de vérité
+300:## 11. Sécurité
+316:## 12. Commandes et environnement
+335:## 13. Skills et agents
+352:## 14. Gestion des découvertes hors périmètre
+366:## 15. Format de fin obligatoire
+400:## 16. Règle absolue
+===== bebba-security — headings =====
+12:## 1. Purpose
+33:## 2. Security First
+49:## 3. BEBBA Roles
+75:## 4. Evidence First
+100:## 5. Authentication
+120:## 6. Authorization
+138:## 7. Operations sensibles BEBBA
+158:## 8. API Security
+176:## 9. Input Validation
+204:## 10. Secrets
+219:## 11. Web Security
+240:## 12. Least Privilege
+255:## 13. Audit Security
+270:## 14. Correction
+284:## 15. Validation
+303:## 16. Reporting
+320:## 17. STOP
+===== bebba-testing — headings =====
+13:## 1. Purpose
+31:## 2. Evidence First
+56:## 3. Test Before Change
+70:## 4. Regression
+84:## 5. BEBBA Critical Flows
+88:### Commande
+===== bebba-wordpress — headings =====
+12:## 1. Purpose
+38:## 2. Architecture First
+55:## 3. Evidence First
+77:## 4. WooCommerce
+104:## 5. BEBBA Business Rules
+129:## 6. Plugins
+146:## 7. Code personnalisé
+167:## 8. Administration
+183:## 9. REST API
+202:## 10. Données
+218:## 11. Performance
+235:## 12. Compatibilité
+251:## 13. Minimal Change
+264:## 14. Validation
+284:## 15. Reporting
+301:## 16. STOP
+[0m
+[0m→ [0mRead .opencode/skills/bebba-database/SKILL.md[90m [offset=114, limit=60][0m
+[0m→ [0mRead .opencode/skills/bebba-wordpress/SKILL.md[90m [offset=104, limit=40][0m
+[0m→ [0mRead .opencode/skills/bebba-testing/SKILL.md[90m [offset=84, limit=16][0m
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills/bebba-migration && xxd SKILL.md | tail -6; echo "---stat---"; stat -c "%n | size=%s | mtime=%y" SKILL.md; ls -la /home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/
+00000830: 7276 6174 696f 6e20 6f75 206e 6f6e 2e0a  rvation ou non..
+00000840: 0a45 7865 6d70 6c65 203a 0a0a 6060 6074  .Exemple :..```t
+00000850: 6578 740a 736f 7572 6365 2e63 7573 746f  ext.source.custo
+00000860: 6d65 722e 6964 0a20 2020 2020 2020 20e2  mer.id.        .
+00000870: 8693 0a64 6573 7469 6e61 7469 6f6e 2e77  ...destination.w
+00000880: 705f 7573 6572 2e49 440a                 p_user.ID.
+---stat---
+SKILL.md | size=2186 | mtime=2026-09-16 19:20:05.330334858 +0100
+total 12
+drwxr-xr-x 2 dell_pro dell_pro 4096 Sep 16 19:20 .
+drwxr-xr-x 9 dell_pro dell_pro 4096 Sep 16 19:22 ..
+-rw-r--r-- 1 dell_pro dell_pro 2186 Sep 16 19:20 SKILL.md
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills && awk '/^```/{c++} END{print "migration: blocks opened/seen:", c}' bebba-migration/SKILL.md; for s in bebba-audit bebba-testing; do awk '/^```/{c++} END{print "'$s': blocks:", c}' $s/SKILL.md; done
+migration: blocks opened/seen: 1
+bebba-audit: blocks: 1
+bebba-testing: blocks: 1
+[0m
+[0m$ [0mcd /home/dell_pro/projects/bhf/.opencode/skills && grep -rl "bebba-migration" . ; echo "---workflow skills section---"; sed -n '335,366p' bebba-workflow/SKILL.md
+./bebba-migration/SKILL.md
+---workflow skills section---
+## 13. Skills et agents
+
+Ne charger une autre skill que si elle est réellement pertinente au BLOC
+courant.
+
+Ne pas multiplier les skills inutilement.
+
+Une skill spécialisée ne doit pas modifier le périmètre du BLOC.
+
+La skill `bebba-workflow` reste la règle de processus générale.
+
+Les règles métier, WordPress, MySQL, migration, sécurité ou tests spécifiques
+doivent être placées dans des skills spécialisées ultérieures uniquement si
+leur création devient réellement nécessaire.
+
+---
+
+## 14. Gestion des découvertes hors périmètre
+
+Si l'analyse révèle un autre problème :
+
+* ne pas le corriger automatiquement ;
+* le documenter brièvement ;
+* indiquer le fichier concerné ;
+* indiquer pourquoi il est hors périmètre ;
+* proposer de le traiter dans un BLOC séparé.
+
+Une découverte ne devient pas automatiquement une autorisation de modification.
+
+---
+
+## 15. Format de fin obligatoire
+[0m
+Toutes les preuves sont réunies. Rapport complet ci-dessous.
+
+---
+
+# RAPPORT — Audit ciblé `bebba-migration`
+
+## A — État réel du fichier
+
+Fichier : `.opencode/skills/bebba-migration/SKILL.md`
+
+| Élément | Valeur |
+|---|---|
+| Lignes | **89** |
+| Taille | **2 186 octets** |
+| SHA256 | `4b75d12999864dc3b07d84fafc2ce6984419d50f353eb2f432bf400421f58c08` |
+| Dernière ligne (89) | `destination.wp_user.ID` |
+| Dernier octet | `\n` (0x0a) — le fichier se termine proprement sur un saut de ligne |
+| Dernière section identifiable | `## 4. Mapping` (lignes 68–89), interrompue au milieu de l'exemple |
+| Blocs ` ``` ` | **1** seul bloc, ouvert ligne 86 (` ```text `), **jamais fermé** |
+| Équilibre des blocs Markdown | **Déséquilibré** (nombre impair : 1 bloc ouvert, 0 fermé) |
+| Fin de fichier | **Brutale, au milieu d'un exemple de mapping**, à l'intérieur du bloc code ouvert |
+
+Le fichier contient en plus un backtick inline ligne 18 (`db.json`), sans rapport avec la fence.
+
+## B — Preuves de troncature
+
+1. La fence ligne 86 ` ```text ` n'a aucun ` ``` ` fermant (vérifié par grep et hexdump) → bloc Markdown ouvert à l'EOF.
+2. Le contenu se coupe sur l'exemple `source.customer.id ↓ destination.wp_user.ID` : un mapping d'exemple sans transformation, sans champ supplémentaire, sans note, sans fermeture. Aucun caractère après `ID`.
+3. La section `## 4. Mapping` est section numérotée de la skill : dans l'ordre logique du plan (`1. Purpose`, `2. Inventory`, `3. Source of Truth`, `4. Mapping`), il manque au minimum les sections suivantes du même niveau (validation, rollback, procédures d'import/export, synchronisation).
+4. Absence du bloc de fermeture standard présent dans **toutes** les autres skills BEBBA : `bebba-database` §13 `STOP`, `bebba-security` §17 `STOP`, `bebba-wordpress` §16 `STOP`, `bebba-workflow` §15/16. Le fichier se termine sans STO-amorce, sans "À la fin d'un bloc migration".
+5. Comparaison de longueur anormale : 89 lignes / 2,18 Ko alors que les skills sœurs font 100–415 lignes (2,0–9,9 Ko) ; `bebba-migration` est de loin la plus courte après `bebba-testing`.
+
+Ces indices, combinés, indiquent une **troncature réelle** : le fichier n'a simplement pas été écrit au-delà de la ligne 89, ou a été coupé.
+
+Note factuelle annexe : un fence non fermé en fin de fichier existe aussi dans `bebba-audit` (ligne 132) et `bebba-testing` (ligne 90), mais ces fichiers se terminent sur une idée achevée (`comportement observé`, `delivered`) ; seul `bebba-migration` se coupe au milieu d'un exemple.
+
+## C — Sections réellement présentes (ordre réel)
+
+| # | Section | Lignes | Rôle | État |
+|---|---|---|---|---|
+| 1 | Frontmatter YAML | 1–8 | metadata `name`/`description` | complète |
+| 2 | `# BEBBA Migration` | 10 | titre | complète |
+| 3 | `## 1. Purpose` | 12–31 | périmètre couvert (14 items) | complète |
+| 4 | `## 2. Migration First Requires an Inventory` | 35–50 | inventaire préalable (10 points) | complète |
+| 5 | `## 3. Source of Truth` | 54–65 | règles source/destination/vérité | complète |
+| 6 | `## 4. Mapping` | 68–89 | règles de mapping par champ | **interrompue** (exemple non fermé, EOF) |
+
+Aucune autre section n'est présente. Les sections absentes ne sont pas déduites comme présentes.
+
+## D — Localisation exacte de la troncature
+
+- **Ligne de début de la coupure : 86** (ouverture ` ```text ` de l'exemple).
+- **Structure Markdown ouverte à l'EOF : bloc de code fencé ` ```text `** (ligne 86), non fermé.
+- **Texte interrompu : l'exemple de mapping** `source.customer.id ↓ destination.wp_user.ID` — exemple à 3 lignes, visiblement incomplet (aucune transformation, aucune autre entité, aucun champ destination supplémentaire).
+- **Nature de la partie résiduelle : un exemple de mapping** (section 4).
+- **Sections logiquement attendues après ce point** (d'après la déclaration de couverture du §Purpose et le motif des skills sœurs) : transformation, import/export procéduraux, synchronisation entre environnements, validation post-migration, rollback/sauvegarde, conservation des données, répartition du périmètre vs les autres skills, et bloc final `STOP`. **Leur contenu précis est inconnu — non reconstitué ici.**
+
+Deuxième frontière : le `## 4. Mapping` ne contient que la partie « déterminer » (11 champs) et un exemple amputé ; les règles de correspondance des statuts ou identifiants éventuelles sont dans la partie perdue.
+
+## E — Source complète trouvée ou non
+
+**Aucune version complète trouvée.** Preuves :
+
+- Git : le fichier n'a **jamais** été suivi. `git log --oneline --all -- .opencode/skills/bebba-migration/SKILL.md` → **0 résultat**. `git ls-tree` → `.opencode/` absent de HEAD et de origin/main (`fatal: path ... exists on disk, but not in 'origin/main'`). `git status --short` → `?? .opencode/` (dossier entier non suivi). Référentiel : clone récent (HEAD@{1} = clone), 1 commit local au-dessus (`7825664`), branche unique `main`.
+- Aucune autre branche (locale ou distante) ; aucun stasb ; reflog = clone + 1 commit seulement.
+- Objets Git : aucun blob (dont « dangling ») ne contient `bebba-migration` ni `destination.wp_user.ID` (batcObject scan sur les 221 blobs → aucun match).
+- Système de fichiers : aucun fichier `.bak`, `.old`, `.save`, `~` ; seule copie connue = la version actuelle (search `/home` limité — pas de couverture de `/` complet, mais les localisations réalistes sont exclues).
+- Aucune des autres skills ne référence `bebba-migration`.
+
+Conclusion : la version actuelle est l'**unique** copie du skill, et elle est tronquée. Rien à récupérer d'une source complète.
+
+## F — Règles métier couvertes / absentes / impossibles à vérifier
+
+État dans le **contenu actuel** (fichier non corrigé) :
+
+| Règle | État |
+|---|---|
+| `to_collect` | Absente (déclarée uniquement dans bebba-database §6 / bebba-wordpress §5) |
+| `paid` | Absente (idem) |
+| Séparation livraison / encaissement | Absente |
+| Stock | Seulement implicite (ligne 26 « migration des stocks ») |
+| Historique des commandes | Implicitement effleurée (ligne 45 « données historiques ») |
+| Statuts de commande (flux complet) | Absents |
+| `received` / `preparing` / `ready` / `waiting_for_driver` / `delivering` / `delivered` / `cancelled` | Absents |
+| Rôles Client / Cuisine / Livreur / Administration | Absents (cf. implicite « migration des livreurs/utilisateurs ») |
+| ID et identifiants | Absents (seulement le concept générique de mapping) |
+| Tracking | Absente |
+| Données client | Seulement implicite (ligne 22 « migration de données clients ») |
+| Conservation des données | Absente |
+| Règles dépendant du mappage de statuts (équivalences source→dest) | **Impossible à vérifier — la partie attendue est dans la zone tronquée** |
+
+Synthèse : aucune règle métier n'est explicitement couverte par le contenant actuel. 2 items implicites (stocks, historique), le reste absent ; ce qui concernerait le mapping fin des statuts/identifiants est dans la partie perdue → non vérifiable.
+
+## G — Chevauchements avec les autres skills
+
+Chevauchements constatés (lecture seule, sans proposition de refactor) :
+
+- **`bebba-database` §7 « Migration de données »** — chevauche direct : mapping source→destination, champs obligatoires, transformations, valeurs par défaut, données non convertibles, contrôles de comptage, relations, **stratégie de rollback**. Y compris **§8 Validation** et **§9 Sauvegarde et rollback**. Beaucoup de ce qui manque à `bebba-migration` est déjà formalisé ici.
+- **`bebba-wordpress` §5 « BEBBA Business Rules »** — règles métier (statuts, to_collect/paid, rôles) que toute migration doit préserver ; à refléter dans le mapping mais pas à dupliquer.
+- **`bebba-security` §3 rôles, §7 opérations sensibles** — contraintes sur les données (client, autorisations) à respecter lors d'une migration.
+- **`bebba-testing` §5 « BEBBA Critical Flows »** — critères de validation post-migration (flux commande), chevauchant une éventuelle section « validation après migration ».
+- **`bebba-workflow` §13 « Skills et agents »** — la skill de processus général déclare que « migration … doivent être placées dans des skills spécialisées » ; niveau de chevauchement méta (qui déclenche quoi), pas de contenu.
+
+Responsabilités réellement propres à `bebba-migration` (non couvertes ailleurs) : plan de migration par environnement, mapping précis source→destination (technique), transformation/import/export/exécution, synchronisation entre environnements, validation comptable spécifique migration, rollback exécutable.
+
+## H — Gravité
+
+- **BLOCKING** — Fichier tronqué au milieu d'une section ; bloc Markdown ouvert non fermé ; sections de la skill inutilisables après `## 4. Mapping`.
+- **BLOCKING** — Aucune source complète ne permet de restaurer le contenu : la skill est la seule trace et elle est incomplète → toute utilisation réelle de `bebba-migration` s'appuierait sur un mode opératoire tronqué.
+- **IMPORTANT** — Absence explicite des règles métier BEBBA (statuts, to_collect/paid, séparation livraison/encaissement, rôles, tracking, conservation) dues à la troncature ; risque de migration qui ne préserve pas les règles.
+- **IMPORTANT** — Chevauchement fonctionnel avec `bebba-database` §7/8/9 (validation, rollback) non résolu tant que la skill est amputée.
+- **MINOR** — Incohérence stylistique : pas de bloc final `STOP` ni de clause « À la fin d'un bloc migration », contrairement aux skills sœurs.
+- **INFO** — Frontmatter valide, détection OpenCode 1.18.31 confirmée (voir section Frontmatter ci-dessous). Aucun problème de détection.
+
+### Frontmatter (vérifié avec le parser réel d'OpenCode 1.18.31)
+
+- `opencode debug skill` → le skill est bien listé : `name=bebba-migration`, `description` repliée correctement (parse YAML OK), `location` correcte.
+- `name` = nom du dossier (`bebba-migration`) : **correspondance OK**.
+- Détection : **confirmée par OpenCode 1.18.31** (contenu injecté, y compris un contenu tronqué — la détection ne dépend pas de l'équilibre des fences).
+- Conclusion frontmatter : YAML valide, aucun problème.
+
+## I — Correction à préparer (non effectuée)
+
+Aucune modification n'a été effectuée. Points à décider ensuite :
+
+1. **Source de base** : aucune version complète n'existe → **aucune source locale/Git à utiliser**. Le projet GitHub distant ne contient pas non plus `.opencode/`.
+2. **Reconstruction à prévoir** (sections absentes) :
+   - compléter la section `## 4. Mapping` jusqu'à son terme (fin de l'exemple, fermeture ` ``` `) ;
+   - reconstruire, sans invention arbitraire, les sections annoncées par le §Purpose et conformes au motif des skills sœurs : transformation de données, procédures import/export, synchronisation entre environnements, validation post-migration (alignée sur bebba-database §8), sauvegarde/rollback (alignée sur bebba-database §9), conservation des données, et bloc final `STOP` ;
+   - décider explicitement (documenter) si le mapping fin des statuts de commande et `to_collect`/`paid` est à inclure dans `bebba-migration` ou laissé à `bebba-database`/`bebba-wordpress`, pour résorber le chevauchement de G avant d'écrire le contenu.
+3. Ces reconstructions doivent être validées par l'utilisateur avant toute écriture (skill de processus générale `bebba-workflow` §14 — découvertes traitées en bloc séparé).
+
+## J — Validation à effectuer après correction (future, non réalisée)
+
+- `wc -l` et taille significativement supérieures (alignées sur les skills sœurs, ≥ 150 lignes attendu).
+- Nombre de ` ``` ` **pair** et blocs équilibrés ; fermeture du bloc exemple.
+- Section `## 4. Mapping` se termine par l'exemple complet et une section suivante commence normalement.
+- Présence des sections reconstruites dans l'ordre du Purpose ; présence d'un bloc final `STOP`.
+- `opencode debug skill` → contenu chargé complet, comparaison du `content` avant/après.
+- Re-croiser G : aucune règle dupliquée verbalement avec bebba-database/wordpress, références croisées si nécessaire.
+- Vérification lecture G/F : les règles métier (statuts, to_collect/paid, livraison/encaissement, rôles, tracking, conservation) sont soit couvertes soit explicitement déléguées à une autre skill.
+
+---
+
+`STOP — audit ciblé de bebba-migration terminé, aucune modification effectuée.`
