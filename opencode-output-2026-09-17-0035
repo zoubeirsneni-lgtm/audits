@@ -1,0 +1,75 @@
+# BLOC 4 — CORRECTION CIBLÉE DE bebba-audit
+
+Date : 2026-09-17
+Projet : /home/dell_pro/projects/bhf
+Fichier corrigé : .opencode/skills/bebba-audit/SKILL.md
+
+---
+
+## 1. État avant
+
+- Fichier tronqué : 137 lignes.
+- Fence ```text ouverte ligne 132, jamais fermée.
+- Fichier interrompu au milieu de la section 7 (liste « règle métier / implémentation technique / comportement observé »).
+- Aucune section STOP finale.
+- 7 sections seulement.
+- SHA256 avant : 6e8f5777d450df90293ca6ddd49c1a53a35fcbf85130919c3342d6e1aa84ee58.
+
+## 2. Défaut exact
+
+Troncature structurelle de bebba-audit/SKILL.md : bloc de code non fermé (ligne 132), contenu inachevé, sections manquantes pour un skill d'audit, aucun STOP final.
+
+## 3. Modification effectuée
+
+- Corrigé UNIQUEMENT bebba-audit/SKILL.md.
+- Frontmatter conservé (name: bebba-audit, description intacte).
+- Sections 1 à 7 existantes conservées.
+- Section 7 complétée : bloc de code fermé, ajout des points de vérification fonctionnelle BEBBA (statuts, livraison/encaissement, to_collect/paid, rôles, stocks, trackingToken, préparation après commande).
+- Sections ajoutées : 8. Fichiers concernés ; 9. Diagnostic précis ; 10. Preuve avant conclusion ; 11. Minimal Change ; 12. Validation indépendante ; 13. Contrôle Git ; 14. Contrôle GitHub ; 15. Reporting ; 16. STOP.
+- Sections intégrant explicitement : Evidence First (§3/§10), audit lecture seule avant correction (§2), preuves avant conclusion (§10), diagnostic précis (§9), fichiers concernés (§8), minimal change (§11), validation indépendante (§12), contrôle Git (§13), contrôle GitHub (§14), reporting (§15), STOP (§16).
+- Interdictions maintenues : pas de commit/push automatique (§13), pas de modification sans preuve (§10), pas de conclusion basée sur « DONE » (§3/§10), pas de mélange de corrections (§11).
+
+## 4. État après
+
+- 298 lignes (avant : 137).
+- 16 sections numérotées + STOP final.
+- SHA256 après : 88ff4402bbe4c79b4fb85bedd02672585ee25429b228ac03bd6b8bddca690e9b.
+- Taille : 6680 octets.
+
+## 5. Vérifications
+
+| Vérification | Résultat |
+|---|---|
+| YAML/frontmatter valide | PASS |
+| name = bebba-audit | PASS |
+| description présente | PASS |
+| Markdown valide | PASS |
+| Blocs ``` équilibrés | PASS (3 ouvertes / 3 fermées : lignes 135/141, 252/260, 295/297) |
+| Plus de troncature | PASS (fini par section STOP) |
+| Section STOP finale | PASS (« STOP. » final) |
+| Cohérence avec bebba-workflow | PASS (chaîne BLOC→AUDIT→…→STOP, pas de commit/push auto) |
+| OpenCode détecte/charge bebba-audit | PASS (skill chargée, contenu corrigé) |
+| git diff / seule modification | PASS (SHA des 7 autres éléments identiques au baseline ; seul bebba-audit a changé) |
+
+## 6. git diff / périmètre
+
+`git status --short` : `?? .opencode/` (dossier entier non suivi, aucun commit possible en l'état).
+
+Preuve par SHA (baseline audit BLOC 4) :
+- run-prompt.sh : aaa8beb437b2abc8edd559631cece3f465dd532185097c05f5f280b3b1ce4366 — INCHANGÉ
+- bebba-workflow : bc44507b1a09b59f9ca4f764adc4693e895223fc1c865b927f5e951a1550a28f — INCHANGÉ
+- bebba-database : 62f42bc55d273573b062de2fa359e9b277b5a4458eb2d11b6648982413bf84b6 — INCHANGÉ
+- bebba-wordpress : a59ab5997c7442b627f5e556c014086bd5c419dfb60775b87ea39653ffe34d3b — INCHANGÉ
+- bebba-security : 442d62aa014092204641c75203293672a8191efef419538b0d55765820499df6 — INCHANGÉ
+- bebba-migration : 4ca00bdf2c8e63b459aa654e97eb2de17f027b70f9989c7015864d953511c828 — INCHANGÉ
+- bebba-testing : 521e6ae927b60d2189c563a4aef043593acfb780cb0a73f83d543fa854034500 — INCHANGÉ
+- bebba-audit : 6e8f5777… → 88ff4402bbe4c79b4fb85bedd02672585ee25429b228ac03bd6b8bddca690e9b — MODIFIÉ
+
+Aucun autre fichier modifié. Aucun commit. Aucun push.
+
+## 7. Rapport archivé
+
+- Mécanisme normal d'archivage (PUT base64 + GET de vérification) vers zoubeirsneni-lgtm/audits, branche main.
+- Vérification GET : contenu relu, taille identique, SHA confirmé.
+
+STOP — correction ciblée de bebba-audit terminée, aucun commit effectué.
