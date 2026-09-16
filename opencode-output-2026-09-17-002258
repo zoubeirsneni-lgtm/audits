@@ -1,0 +1,101 @@
+RAPPORT — VALIDATION INDEPENDANTE DU MECANISME D'ARCHIVAGE DES RAPPORTS OPENCODE
+================================================================================
+Date : 2026-09-17  (validation independante)
+Objet valide : .opencode/run-prompt.sh (correctif BLOC 3)
+Statut : aucune modification de fichier, aucun commit, aucun push.
+
+----------------------------------------------------------------
+1. ÉTAT ACTUEL
+----------------------------------------------------------------
+- Fichier concerne : /home/dell_pro/projects/bhf/.opencode/run-prompt.sh
+- 88 lignes / 2530 octets / sha256 aaa8beb437b2abc8edd559631cece3f465dd532185097c05f5f280b3b1ce4366
+- Permissions : -rwxr-xr-x (executable) ; bash -n : syntaxe OK.
+- Commande : `opencode run "$(cat "$PROMPT_FILE")" 2>&1 | tee "$TMP_OUTPUT"`
+  capture stdout+stderr ; PIPESTATUS[0] conserve le code de sortie.
+- Nom de rapport : opencode-output-YYYY-MM-DD-HHMMSS avec boucle anti-collision (-N, max 20).
+- Archive : PUT gh api repos/zoubeirsneni-lgtm/audits/contents/... base64, branche main,
+  puis GET de verification du .sha.
+- Success : "Archive CONFIRMEE" + URL + SHA + exit = code OpenCode.
+- Echec OpenCode : rapport archive quand meme, code de sortie conserve.
+- Echec GitHub : "ERREUR ARCHIVAGE" + exit 3, jamais presente comme succes.
+
+Git : `git status --short` -> ?? .opencode/ (non suivi, inchange)
+Dernier commit : 7825664f8ec40e3141cbe1d753e05d2cd4773b36 (inchange)
+
+----------------------------------------------------------------
+2. TESTS EFFECTUES
+----------------------------------------------------------------
+Chaque test utilise le wrapper reel avec un stub opencode controle
+(sortie PROBE_STDOUT/PROBE_STDERR, code configurable) et un prompt
+temporaire __validation_test.md (supprime ensuite, arbre Git inchange).
+
+TEST 3.1 - opencode exit 0 :
+  wrapper exit = 0 ; nouveau rapport opencode-output-2026-09-17-002225
+  present sur GitHub (GET), contenu stdout+stderr+metadata opencode_exit: 0.
+  => PASS
+
+TEST 3.2 - opencode exit 7 :
+  wrapper exit = 7 ; nouveau rapport opencode-output-2026-09-17-002231
+  present sur GitHub (GET), contenu stdout+stderr+metadata opencode_exit: 7.
+  => PASS
+
+TEST 4 - verification directe sur GitHub (GET API, pas seulement le message local) :
+  - opencode-output-2026-09-17-002225 : present (sha 2ebd9395..., size 262),
+    stdout PROBE_STDOUT x2, stderr PROBE_STDERR x1, metadata exit 0.
+  - opencode-output-2026-09-17-002231 : present (sha 197fc646..., size 262),
+    stdout PROBE_STDOUT x2, stderr PROBE_STDERR x1, metadata exit 7.
+  => PASS
+
+TEST 5 - code de sortie non masque :
+  exit 0 -> wrapper exit 0 ; exit 7 -> wrapper exit 7. Archivage dans les deux cas.
+  => PASS
+
+TEST 6 - echec GitHub simule (stub gh qui echoue) :
+  wrapper exit = 3, message "ERREUR ARCHIVAGE" explicite, AUCUN nouveau rapport cree,
+  aucune mention "Archive CONFIRMEE".
+  => PASS
+
+TEST 7 - absence d'ecrasement :
+  sha62 inchange pour 001843 (95fa068a), 001854 (3b103276), 002225, 002231.
+  => PASS
+
+TEST 8 - arborescence Git :
+  aucun fichier suivi modifie ; seul ?? .opencode/ (etat pre-existant).
+  prompt temporaire supprime. => PASS
+
+----------------------------------------------------------------
+3. GITHUB
+----------------------------------------------------------------
+Depot : zoubeirsneni-lgtm/audits ; branche : main.
+Nouveaux rapports de test (existence verifiee par GET API, non par message local) :
+  - opencode-output-2026-09-17-002225
+    https://github.com/zoubeirsneni-lgtm/audits/blob/main/opencode-output-2026-09-17-002225
+  - opencode-output-2026-09-17-002231
+    https://github.com/zoubeirsneni-lgtm/audits/blob/main/opencode-output-2026-09-17-002231
+Rapports precedents verifies : opencode-output-2026-09-17-001843 (exit 0),
+opencode-output-2026-09-17-001854 (exit 7), contenu complet (stdout+stderr+exit).
+
+----------------------------------------------------------------
+4. ANOMALIES RESTANTES
+----------------------------------------------------------------
+Aucune anomalie bloquante constatee.
+Limite structurelle documentee (non bloquante, propre au fonctionnement
+interactif) : une exécution opencode lancee directement sans le wrapper ne
+déclenche pas d'archivage ; ce comportement n'est pas detecte a posteriori.
+Le mecanisme garantit l'archivage de toute exécution passant par run-prompt.sh.
+
+----------------------------------------------------------------
+5. CONCLUSION
+----------------------------------------------------------------
+VALIDATION PASS — le mecanisme d'archivage des rapports OpenCode est
+fonctionnel et verifie independamment.
+
+----------------------------------------------------------------
+STOP — validation indépendante du mécanisme d'archivage terminée,
+aucun fichier modifié, aucun commit effectué.
+==== OPENCODE OUTPUT METADATA ====
+prompt: validation-independante-bloc3
+run_date: 2026-09-17T00:23:11+0100
+report_name: opencode-output-2026-09-17-002258
+repo: zoubeirsneni-lgtm/audits
+branch: main
