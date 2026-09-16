@@ -1,0 +1,60 @@
+# COMMIT — INFRASTRUCTURE OPENCODE BEBBA
+
+Date : 2026-09-17
+Projet : /home/dell_pro/projects/bhf
+
+---
+
+## 1. Précondition
+
+- Validation indépendante BLOC 4 (dernier audit) : **VALIDATION PASS**.
+- Aucune correction supplémentaire effectuée avant le commit.
+
+## 2. CONTRÔLE AVANT COMMIT
+
+- `git status --short` avant commit : `?? .opencode/` uniquement.
+- Fichiers ignorés confirmés (`git check-ignore`) : `.opencode/node_modules/` (63 Mo), `.opencode/package.json`, `.opencode/package-lock.json`.
+- HEAD avant commit : `7825664f8ec40e3141cbe1d753e05d2cd4773b36`, branche `main`.
+- Aucun secret / `.env` en stage (grep de contrôle : AUCUN fichier sensible).
+
+## 3. Liste exacte des 15 fichiers commités
+
+1. .opencode/run-prompt.sh
+2. .opencode/prompts/activation-rapport-github.md
+3. .opencode/prompts/audit-global-skills.md
+4. .opencode/prompts/bloc-02-correction.md
+5. .opencode/prompts/bloc-03-audit-fonctionnel.md
+6. .opencode/prompts/bloc-migration-audit.md
+7. .opencode/prompts/bloc-migration-correction.md
+8. .opencode/prompts/bloc-migration-validation.md
+9. .opencode/skills/bebba-audit/SKILL.md
+10. .opencode/skills/bebba-database/SKILL.md
+11. .opencode/skills/bebba-migration/SKILL.md
+12. .opencode/skills/bebba-security/SKILL.md
+13. .opencode/skills/bebba-testing/SKILL.md
+14. .opencode/skills/bebba-wordpress/SKILL.md
+15. .opencode/skills/bebba-workflow/SKILL.md
+
+Vérification `git diff --cached --name-only` : exactement ces 15 fichiers, aucun autre.
+
+## 4. Commit
+
+- SHA du commit : **4b082af8ce6bb9a8ee41a1ecc143f28d75bd5b16**
+- Message : `chore(opencode): add BEBBA audit workflow infrastructure`
+- Parent : `7825664f8ec40e3141cbe1d753e05d2cd4773b36`
+- Statistiques : 15 files changed, 5284 insertions(+), 0 suppression.
+- Modes : `run-prompt.sh` créé en `100755` (exécutable), les 14 autres en `100644`.
+
+## 5. État après commit
+
+- `git status --short` : vide (working tree propre).
+- HEAD local : `4b082af8ce6bb9a8ee41a1ecc143f28d75bd5b16`.
+- Remote `refs/heads/main` : `7825664f8ec40e3141cbe1d753e05d2cd4773b36` (inchangé).
+
+## 6. Confirmations
+
+- Aucun push effectué (remote inchangé).
+- Aucun fichier hors périmètre inclus (ni node_modules, ni package.json, ni package-lock.json, ni autre fichier).
+- Aucun amend, aucun second commit, aucune modification de code BEBBA, aucune modification hors périmètre.
+
+STOP — commit local effectué, aucun push effectué.
