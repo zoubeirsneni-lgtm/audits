@@ -1,0 +1,227 @@
+# BLOC 4 — AUDIT GLOBAL FINAL DE L'INFRASTRUCTURE OPENCODE BEBBA
+
+RAPPORT D'AUDIT — lecture seule, aucun fichier modifié, aucun commit effectué.
+
+Date : 2026-09-17
+Projet : /home/dell_pro/projects/bhf
+Branche : main (HEAD = origin/main = 7825664f8ec40e3141cbe1d753e05d2cd4773b36)
+
+---
+
+## 1. Résumé exécutif
+
+- 8 éléments d'infrastructure audités : 1 script d'archivage + 7 skills OpenCode.
+- 6 skills conformes sur 7 (structure, frontmatter, fences, section STOP).
+- 1 DEFECT structurel majeur : `bebba-audit/SKILL.md` est TRONQUÉ.
+- 1 observation non bloquante : `bebba-workflow` ne se termine pas littéralement par « - STOP. ».
+- 1 observation infra : `.opencode/.gitignore` s'ignore lui-même (ses règles ne seront pas commitées).
+- Règles métier des skills cohérentes entre elles ET avec le code réel.
+- Audit 100 % lecture seule : rien modifié, rien commité, rien poussé.
+
+VERDICT : **FAIL** — parce qu'un élément du périmètre (bebba-audit) est structurellement incomplet ; l'infrastructure ne doit pas être commitée en l'état avant une correction ciblée.
+
+---
+
+## 2. AUDIT 1 — Existence des 8 éléments
+
+| Élément | Emplacement | Statut |
+|---|---|---|
+| run-prompt.sh | .opencode/run-prompt.sh | OK (2530 octets, -rwxr-xr-x) |
+| bebba-workflow | .opencode/skills/bebba-workflow/SKILL.md | OK |
+| bebba-database | .opencode/skills/bebba-database/SKILL.md | OK |
+| bebba-wordpress | .opencode/skills/bebba-wordpress/SKILL.md | OK |
+| bebba-security | .opencode/skills/bebba-security/SKILL.md | OK |
+| bebba-migration | .opencode/skills/bebba-migration/SKILL.md | OK |
+| bebba-testing | .opencode/skills/bebba-testing/SKILL.md | OK |
+| bebba-audit | .opencode/skills/bebba-audit/SKILL.md | OK |
+
+AUDIT 1 : PASS.
+
+---
+
+## 3. AUDIT 2 — Structure des fichiers
+
+Contrôles : frontmatter YAML valide ; `name` = nom du dossier ; `description` présente ; Markdown ; blocs de code équilibrés ; absence de troncature ; section STOP finale.
+
+| Skill | Lignes | Frontmatter | name=dossier | Fences ouvertes/fermées | Fin par « - STOP. » | Verdict structure |
+|---|---|---|---|---|---|---|
+| bebba-workflow | 414 | OK | OK | 5 / 5 | NON (finit §16 Règle absolue) | Conforme + observation |
+| bebba-database | 250 | OK | OK | 0 / 0 | OUI | Conforme |
+| bebba-wordpress | 308 | OK | OK | 0 / 0 | OUI | Conforme |
+| bebba-security | 327 | OK | OK | 0 / 0 | OUI | Conforme |
+| bebba-migration | 699 | OK | OK | 19 / 19 | OUI | Conforme |
+| bebba-testing | 453 | OK | OK | 6 / 6 | OUI | Conforme (validé BLOC 2) |
+| bebba-audit | 137 | OK | OK | **1 / 0** | **NON** | **TRONQUÉ — DEFECT** |
+
+DEFECT — `bebba-audit/SKILL.md` :
+- fence ` ```text ` ouverte ligne 132, JAMAIS refermée ;
+- le fichier s'interrompt au milieu de la liste « règle métier / vs / implémentation technique / vs / comportement observé » (ligne 137) ;
+- seulement 7 sections, aucun STOP final ;
+- sha256 = 6e8f5777d450df90293ca6ddd49c1a53a35fcbf85130919c3342d6e1aa84ee58.
+
+OBSERVATION — `bebba-workflow/SKILL.md` : se termine par le §16 « Règle absolue » et non pas par un littéral « - STOP. ». Le §15 définit le format de fin obligatoire des BLOCs. Ceci est cohérent avec son rôle de skill-mère, mais diverge de la convention des autres skills. Non bloquant.
+
+AUDIT 2 : ÉCHEC (1 defect, 1 observation).
+
+---
+
+## 4. AUDIT 3 — Cohérence inter-skills
+
+Règles métier croisées sur les 7 skills — toutes convergent :
+
+- Paiement V1 : Cash on Delivery uniquement (wordpress §5, migration §7).
+- Statuts paiement : `to_collect` | `paid` (database §6, wordpress §5, migration §7/§12).
+- Commande créée : `paymentStatus = to_collect` (migration §7, code server/db.ts:1364).
+- `delivered` ≠ `paid` ; pas de bascule implicite (testing §15/§16, migration §7, wordpress §5).
+- Cycle commande : `received → preparing → ready → waiting_for_driver → delivering → delivered` + `cancelled` (migration §7, wordpress §5, testing §14).
+- Rôles : Client, Cuisine/KDS, Livreur, Administration / Super Admin ; accès absolu Super Admin (security §3, wordpress §5, migration §7, testing §11).
+- trackingToken / bebba_last_tracking_token (migration §7, testing §18).
+- Téléphone + adresse obligatoires (wordpress §5, database).
+- Repas préparés après commande (wordpress §5, migration §7).
+- Stocks cohérents ; pas de consommation/restitution implicite (database §4/§6, wordpress §5, migration §7).
+
+Aucune contradiction relevée entre les 7 skills.
+
+AUDIT 3 : PASS.
+
+---
+
+## 5. AUDIT 4 — Workflow global
+
+- Chaîne officielle présente : `BLOC → AUDIT → PREUVE → STOP → CORRECTION → VALIDATION → COMMIT → VÉRIFICATION GITHUB → STOP` (bebba-workflow ligne 21).
+- Commit : « Créer un commit uniquement lorsque l'utilisateur l'autorise explicitement » (bebba-workflow ligne 221).
+- Push : jamais automatique (bebba-workflow lignes 255-257) ; action distincte, sur demande.
+- Git (bebba-workflow §7/§8) : « fichier modifié ≠ commit local ≠ commit poussé ≠ commit présent sur GitHub » (ligne 215).
+- Vérification requise avant commit des secrets / `.env` (ligne 207).
+- Référentiel : commit `7825664` gelé comme référence de l'ancienne version (ligne 292).
+- Aucun skill autre que workflow n'instruit de commit/push automatique.
+- bebba-audit (ligne 36) : « ne pas faire de commit » — conforme.
+
+AUDIT 4 : PASS.
+
+---
+
+## 6. AUDIT 5 — run-prompt.sh
+
+- sha256 = aaa8beb437b2abc8edd559631cece3f465dd532185097c05f5f280b3b1ce4366.
+- Shebang `#!/bin/bash` (ligne 1) ; `bash -n` : syntaxe OK ; exécutable.
+- 89 lignes (attention : wc comptait 88 avant édition ; état actuel 89).
+- Comportements vérifiés (identiques à ceux validés en BLOC 3) :
+  - capture stdout+stderr via `2>&1 | tee` (ligne 27) ; `PIPESTATUS[0]` conserve le code OpenCode (ligne 28) ;
+  - nom horodaté `opencode-output-YYYY-MM-DD-HHMMSS` + boucle anti-collision (lignes 36-45, max 20) ;
+  - métadonnées ajoutées en QUEUE sans altérer le rapport (lignes 48-57) ;
+  - archivage PUT base64 → `repos/zoubeirsneni-lgtm/audits/contents/...` branche `main` (lignes 67-68) ;
+  - vérification GET du `.sha` avant confirmation (lignes 69-73) ; « Archive CONFIRMEE » + URL + SHA (ligne 77-78) ;
+  - succès : `exit $OPENCODE_EXIT` (ligne 81) ; échec : « ERREUR ARCHIVAGE » + `exit 3` (ligne 88) ;
+  - garde-fou : `gh` manquant → erreur avant archivage (lignes 61-64) ;
+  - aucun faux succès possible (CODE vs PIPE vérifiés).
+
+AUDIT 5 : PASS.
+
+---
+
+## 7. AUDIT 6 — Compatibilité OpenCode
+
+- OpenCode 1.18.31 (`/home/dell_pro/.opencode/bin/opencode`).
+- Les 7 skills sont détectées par OpenCode (listées dans available_skills).
+- Frontmatter `name`/`description` conformes au format skill.
+- Observations connues : le chargeur de skills peut servir un contenu en cache de session (constaté pour bebba-testing lors de la validation BLOC 2) ; la lecture directe du disque reste la source de vérité. Non bloquant.
+
+AUDIT 6 : PASS.
+
+---
+
+## 8. AUDIT 7 — Git
+
+- HEAD local = `7825664f8ec40e3141cbe1d753e05d2cd4773b36`.
+- origin = `https://github.com/zoubeirsneni-lgtm/bhf.git`.
+- remote `refs/heads/main` = `7825664f8ec40e3141cbe1d753e05d2cd4773b36` = HEAD local (rien à pousser).
+- `git status --porcelain` : seule entrée `?? .opencode/` ; aucun autre changement.
+- Aucun fichier `.opencode/` suivi (git ls-files .opencode/ vide).
+
+AUDIT 7 : PASS.
+
+---
+
+## 9. AUDIT 8 — Périmètre du premier commit
+
+Fichiers qui seraient ajoutés par `git add .opencode` (dry-run, 15 fichiers) :
+
+- .opencode/run-prompt.sh
+- .opencode/prompts/activation-rapport-github.md
+- .opencode/prompts/audit-global-skills.md
+- .opencode/prompts/bloc-02-correction.md
+- .opencode/prompts/bloc-03-audit-fonctionnel.md
+- .opencode/prompts/bloc-migration-audit.md
+- .opencode/prompts/bloc-migration-correction.md
+- .opencode/prompts/bloc-migration-validation.md
+- .opencode/skills/{bebba-workflow,bebba-database,bebba-wordpress,bebba-security,bebba-migration,bebba-testing,bebba-audit}/SKILL.md
+
+Exclus (ignorés) : `node_modules/` (63 Mo), `.opencode/package.json`, `.opencode/package-lock.json`.
+
+OBSERVATION — `.opencode/.gitignore` contient la ligne `.gitignore` : le fichier s'ignore lui-même (git check-ignore : oui). Ses règles (`node_modules`, `package.json`, `package-lock.json`, `bun.lock`) ne seront donc PAS commitées. Conséquence : sur un clone frais, ces fichiers ne seront pas ignorés et pourraient être ajoutés accidentellement. Recommandation → intégrer ces règles au `.gitignore` racine (ou ne pas s'auto-ignorer) lors d'un bloc ultérieur. Non bloquant pour l'audit.
+
+AUDIT 8 : PASS AVEC OBSERVATION.
+
+---
+
+## 10. AUDIT 9 — Règles métier (skills vs code réel)
+
+Preuves code :
+- PaymentStatus : `to_collect` | `paid`, `paid` seulement si `delivered` (server.ts:1226,1231,1241-1242 ; server/db.ts:1686).
+- Création commande : `paymentStatus: 'to_collect'` (server/db.ts:1364 ; seedData.ts:1308).
+- Transitions internes (TRANSITIONS server/db.ts:1513-1519) : received→preparing/cancelled ; preparing→ready/cancelled ; ready→waiting_for_driver/cancelled ; waiting_for_driver→delivering/cancelled ; delivering→delivered/cancelled ; cancelled=[].
+- Stock consommé au passage vers `preparing` (server/db.ts:1540-1541).
+- trackingToken généré (server/db.ts:1339), exposé (server.ts:772), lu par token (server/db.ts:1456).
+- Rôles : `driver` (server/db.ts:623,708), `client` (server/db.ts:1798,1846,1870), vérification `role === 'client'` (server/db.ts:2025).
+
+Correspondances skills ↔ code : TOUTES cohérentes (statuts, remb, COB, tracking, rôles, stock, livraison ≠ encaissement).
+
+AUDIT 9 : PASS.
+
+---
+
+## 11. AUDIT 10 — Rapport et archives
+
+- Ce rapport est produit en lecture seule.
+- Archives déjà existantes dans `zoubeirsneni-lgtm/audits` (branch main) : opencode-output-2026-09-16 (audit), rapports de correction/validation BLOC 2/BLOC 3 (115000→002635), etc.
+- Ce rapport est archivé au même endroit par le mécanisme normal (PUT base64 + GET de vérification du `.sha`), conformément à la logique de run-prompt.sh.
+
+---
+
+## 12. Détail des anomalies
+
+| Anomalie | Sévérité | Fichier | Preuve | Action requise |
+|---|---|---|---|---|
+| Fichier tronqué : fence ouverte non fermée + pas de STOP | Haute | .opencode/skills/bebba-audit/SKILL.md | Ligne 132 ` ```text ` jamais refermée ; fin à la ligne 137 ; 7 sections ; 1 fence ouverte / 0 fermée | Correction ciblée avant le premier commit (compléter la section 7, fermer la fence, ajouter les sections manquantes + STOP) |
+
+Observations :
+
+1. bebba-workflow ne se termine pas littéralement par « - STOP. » (fin §16).
+2. `.opencode/.gitignore` s'ignore lui-même (règles non commitées).
+3. Cache de session OpenCode (hors infrastructure ; constat environnement).
+
+---
+
+## 13. Conclusion
+
+- Existence : PASS.
+- Structure : FAIL (1 defect : bebba-audit tronqué).
+- Cohérence inter-skills : PASS.
+- Workflow global : PASS.
+- run-prompt.sh : PASS.
+- Compatibilité OpenCode : PASS.
+- Git : PASS.
+- Périmètre du futur commit : PASS AVEC OBSERVATION.
+- Règles métier : PASS.
+- Rapport/archives : PASS.
+
+VERDICT GLOBAL : **FAIL**
+
+Motif : `bebba-audit/SKILL.md` est structurellement incomplet (fence ouverte, section coupée, STOP absent). L'infrastructure ne doit pas être commitée en l'état. Action suivante recommandée : un BLOC 4-CORRECTION ciblé sur bebba-audit (compléter / réécrire proprement le fichier, fermer la fence, ajouter Reporting + STOP), puis VALIDATION indépendante, puis COMMIT.
+
+Aucun fichier modifié pendant cet audit. Aucun commit effectué.
+
+---
+
+STOP — audit global BLOC 4 terminé, aucun fichier modifié, aucun commit effectué.
