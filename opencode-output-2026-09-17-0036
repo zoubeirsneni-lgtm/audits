@@ -1,0 +1,143 @@
+# BLOC 4 — VALIDATION INDÉPENDANTE GLOBALE DE L'INFRASTRUCTURE OPENCODE BEBBA
+
+Date : 2026-09-17
+Projet : /home/dell_pro/projects/bhf
+Mode : lecture seule (aucun fichier modifié, aucun commit, aucun push)
+
+---
+
+## 1. État initial
+
+- `.opencode/` entièrement non suivi (`git status --short` = `?? .opencode/`).
+- HEAD = branche `main` = `7825664f8ec40e3141cbe1d753e05d2cd4773b36` = remote `refs/heads/main` (identique).
+- Périmètre validé : 8 éléments (run-prompt.sh + 7 skills).
+
+## 2. VALIDATION DE bebba-audit
+
+| Vérification | Résultat |
+|---|---|
+| YAML/frontmatter valide | PASS |
+| `name: bebba-audit` | PASS |
+| description présente | PASS |
+| Markdown complet | PASS |
+| Fences équilibrées | PASS (3 ouvertes / 3 fermées : lignes 135/141, 252/260, 295/297) |
+| Aucune troncature | PASS (298 lignes ; finit par `STOP.`) |
+| 16 sections attendues | PASS |
+| Section STOP finale | PASS (§16) |
+| Evidence First | PASS (§3) |
+| Audit lecture seule avant correction | PASS (§2) |
+| Preuves avant conclusion | PASS (§10 « La preuve prime sur la déclaration d'un agent ») |
+| Diagnostic précis | PASS (§9) |
+| Fichiers concernés | PASS (§8) |
+| Minimal Change | PASS (§11) |
+| Validation indépendante | PASS (§12) |
+| Contrôle Git | PASS (§13) |
+| Contrôle GitHub | PASS (§14) |
+| Reporting | PASS (§15) |
+| Interdiction commit/push automatique | PASS (§13 : « Ne jamais effectuer un commit ou un push automatiquement » ; §16) |
+| Interdiction conclusion sur « DONE » | PASS (§3 : « Un message DONE, OK, build passed ou équivalent ne constitue pas... ») |
+| SHA attendu | PASS — `88ff4402bbe4c79b4fb85bedd02672585ee25429b228ac03bd6b8bddca690e9b` |
+
+## 3. CONTRÔLE DES 7 AUTRES ÉLÉMENTS (SHA)
+
+| Élément | SHA attendu | SHA réel | Résultat |
+|---|---|---|---|
+| run-prompt.sh | aaa8beb437b2abc8edd559631cece3f465dd532185097c05f5f280b3b1ce436 | aaa8beb437b2abc8edd559631cece3f465dd532185097c05f5f280b3b1ce4366 | PASS (identique ; l'attendu de l'énoncé est tronqué d'un caractère) |
+| bebba-workflow | bc44507b1a09b59f9ca4f764adc4693e895223fc1c865b927f5e951a1550a28f | id. | PASS |
+| bebba-database | 62f42bc55d273573b062de2fa359e9b277b5a4458eb2d11b6648982413bf84b6 | id. | PASS |
+| bebba-wordpress | a59ab5997c7442b627f5e556c014086bd5c419dfb60775b87ea39653ffe34d3b | id. | PASS |
+| bebba-security | 442d62aa014092204641c75203293672a8191efef419538b0d55765820499df6 | id. | PASS |
+| bebba-migration | 4ca00bdf2c8e63b459aa654e97eb2de17f027b70f9989c7015864d953511c828 | id. | PASS |
+| bebba-testing | 521e6ae927b60d2189c563a4aef043593acfb780cb0a73f83d543fa854034500 | id. | PASS |
+
+Aucune anomalie de SHA.
+
+## 4. COHÉRENCE INTER-SKILLS
+
+- `to_collect | paid` : présent dans 5 skills (testing, wordpress, database, migration, audit) — cohérent.
+- Création d'une commande en `to_collect` : migration §7 — cohérent.
+- Livraison ≠ encaissement / distincts / séparés : testing, wordpress, security, database, migration — cohérent.
+- Cycle `received → preparing → ready → waiting_for_driver → delivering → delivered` : testing, wordpress, migration — cohérent.
+- `cancelled` : testing, wordpress, migration — cohérent.
+- Rôles Client / Cuisine/KDS / Livreur / Administration : testing, wordpress, security, migration — cohérent.
+- `trackingToken` : testing, migration — cohérent.
+- Téléphone / adresse : wordpress, migration, database — cohérent.
+- Préparation après commande : testing, wordpress, migration, audit — cohérent.
+- Stock : 6/7 skills (hors workflow) — cohérent.
+- Migration, sécurité, validation, Git/GitHub : couverts sans contradiction.
+
+Aucune contradiction détectée.
+
+## 5. CHARGEMENT OPENCODE
+
+- Version OpenCode : `1.18.31`.
+- Les 7 skills sont listées/détectées par OpenCode.
+- `bebba-audit` est chargée ; le disque contient le contenu complet (298 lignes, 16 sections, STOP final).
+- OBSERVATION (non bloquante) : le cache de session OpenCode a injecté une version tronquée de `bebba-audit` (extrait s'arrêtant à la section 7) alors que le fichier sur disque est complet. Source de vérité = disque. Cache non modifié (respect de la consigne).
+
+## 6. VALIDATION DE run-prompt.sh (sans modification)
+
+| Vérification | Résultat |
+|---|---|
+| Syntaxe Bash (`bash -n`) | PASS |
+| Permission exécutable | PASS (-rwxr-xr-x) |
+| Capture stdout + stderr | PASS (ligne 27 : `2>&1 \| tee`) |
+| Conservation du code retour OpenCode | PASS (ligne 28 : `PIPESTATUS[0]`) |
+| Archivage GitHub (PUT base64) | PASS (lignes 67-68) |
+| Vérification GET après archivage | PASS (ligne 69 : `.sha` via GET) |
+| Gestion d'un échec GitHub | PASS (ligne 84 : « ERREUR ARCHIVAGE », exit 3) |
+| Absence de faux succès | PASS (confirmation uniquement si `.sha` non vide) |
+| Nommage unique des rapports | PASS (lignes 37-45 : horodatage + boucle COUNTER max 20) |
+| HAute SHA | PASS |
+
+## 7. CONTRÔLE GIT
+
+| Vérification | Résultat |
+|---|---|
+| HEAD | `7825664f8ec40e3141cbe1d753e05d2cd4773b36` |
+| Branche | `main` |
+| `git status --short` | `?? .opencode/` uniquement |
+| Modifications | aucune dans les fichiers suivis |
+| Fichiers suivis `.opencode/` | 0 (non suivi) |
+| Remote main | `7825664f8ec40e3141cbe1d753e05d2cd4773b36` = HEAD local |
+| Commits récents | 7825664, 36254b8, 0d18ce4 (inchangés) |
+
+Aucun `git add`, `git commit`, `git push` effectué.
+
+## 8. FUTUR PÉRIMÈTRE DE COMMIT (dry-run, non effectif)
+
+Fichiers qui seraient ajoutés par `git add .opencode` (15 fichiers) :
+
+- .opencode/run-prompt.sh
+- .opencode/prompts/activation-rapport-github.md
+- .opencode/prompts/audit-global-skills.md
+- .opencode/prompts/bloc-02-correction.md
+- .opencode/prompts/bloc-03-audit-fonctionnel.md
+- .opencode/prompts/bloc-migration-audit.md
+- .opencode/prompts/bloc-migration-correction.md
+- .opencode/prompts/bloc-migration-validation.md
+- .opencode/skills/bebba-audit/SKILL.md
+- .opencode/skills/bebba-database/SKILL.md
+- .opencode/skills/bebba-migration/SKILL.md
+- .opencode/skills/bebba-security/SKILL.md
+- .opencode/skills/bebba-testing/SKILL.md
+- .opencode/skills/bebba-wordpress/SKILL.md
+- .opencode/skills/bebba-workflow/SKILL.md
+
+Exclus : `node_modules/` (63 Mo), `package.json`, `package-lock.json` (ignorés via `.opencode/.gitignore`). Aucun fichier inattendu.
+
+## 9. Synthèse
+
+- Éléments conforDatos : 8/8 éléments présents ; SHA tous conformes ; structure, contenu, cohérence, Git et périmètre validés.
+- Éléments non conformes : aucun.
+- Observations (non bloquantes) : cache de session OpenCode tronqué pour bebba-audit ; `.opencode/.gitignore` s'ignore lui-même (règle déjà notée lors de l'audit BLOC 4).
+
+## 10. VERDICT GLOBAL
+
+**VALIDATION PASS**
+
+Toutes les vérifications bloquantes passent : SHA conformes, structure de bebba-audit complète et conforme, cohérence inter-skills, chargement OpenCode OK, run-prompt.sh intact, Git conforme, périmètre de commit identique à l'audit. Aucun fichier modifié, aucun commit effectué.
+
+Rapport archivé via le mécanisme normal vers `zoubeirsneni-lgtm/audits`.
+
+STOP — validation indépendante globale terminée, aucun fichier modifié, aucun commit effectué.
