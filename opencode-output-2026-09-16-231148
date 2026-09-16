@@ -1,0 +1,7 @@
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfalse; code=$?; echo "Erreur contrôlée provoquée, exit code: $code"; exit "$code"
+Erreur contrôlée provoquée, exit code: 1
+[0m
+Erreur contrôlée provoquée, terminée avec le code de sortie 1.
