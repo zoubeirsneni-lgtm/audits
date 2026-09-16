@@ -1,0 +1,260 @@
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mSkill "bebba-migration"
+[0m→ [0mSkill "bebba-workflow"
+[0m→ [0mRead .opencode/skills/bebba-migration/SKILL.md
+[0m→ [0mRead .opencode/skills/bebba-database/SKILL.md
+[0m→ [0mRead .opencode/skills/bebba-wordpress/SKILL.md
+[0m→ [0mRead .opencode/skills/bebba-security/SKILL.md
+[0m→ [0mRead .opencode/skills/bebba-testing/SKILL.md
+[0m→ [0mRead .opencode/skills/bebba-audit/SKILL.md
+[0m
+[0m$ [0mgit status --short && echo "---DIFF---" && git diff --name-only && echo "---LOG---" && git log --oneline -10
+?? .opencode/
+---DIFF---
+---LOG---
+7825664 chore: freeze firestore version before wordpress migration
+36254b8 refactor: standardize inventory and order models
+0d18ce4 feat(security): implement data masking for public order tracking
+24bea1a build: tighten security for server and Firestore
+97680bd chore(security): harden firestore rules
+5e29ad4 feat(admin): implement demo data reset functionality
+2ec575b refactor(db, auth): migrate to Firebase modular SDK
+b505c5f refactor: migrate to Firebase Admin SDK
+a2a1f3e refactor: improve order options handling and logout flow
+99a9afc feat(db): migrate to Firestore and add idempotency
+[0m
+[0m$ [0mwc -l -c .opencode/skills/bebba-migration/SKILL.md && sha256sum .opencode/skills/bebba-migration/SKILL.md
+89 2186 .opencode/skills/bebba-migration/SKILL.md
+4b75d12999864dc3b07d84fafc2ce6984419d50f353eb2f432bf400421f58c08  .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0mopencode --version 2>&1 | head -3; echo "---"; opencode debug --help 2>&1 | head -20
+1.18.31
+---
+opencode debug
+
+debugging and troubleshooting tools
+
+Commands:
+  opencode debug config        show resolved configuration
+  opencode debug lsp           LSP debugging utilities
+  opencode debug rg            ripgrep debugging utilities
+  opencode debug file          file system debugging utilities
+  opencode debug scrap         list all known projects
+  opencode debug skill         list all available skills
+  opencode debug snapshot      snapshot debugging utilities
+  opencode debug startup       print startup timing
+  opencode debug agent <name>  show agent configuration details
+  opencode debug v2            debug v2 catalog and built-in plugins
+  opencode debug info          show debug information
+  opencode debug paths         show global paths (data, config, cache, state)
+  opencode debug wait          wait indefinitely (for debugging)
+
+Options:
+[0m
+[0m$ [0mopencode debug skill 2>&1 | head -30
+[
+  {
+    "name": "customize-opencode",
+    "description": "Use ONLY when the user is editing or creating opencode's own configuration: opencode.json, opencode.jsonc, files under .opencode/, or files under ~/.config/opencode/. Also use when creating or fixing opencode agents, subagents, skills, plugins, MCP servers, or permission rules. Do not use for the user's own application code, or for any project that is not configuring opencode itself.",
+    "location": "<built-in>",
+    "content": "<!--\n  Built-in skill. Name and description are registered in code at\n  packages/core/src/plugin/skill.ts\n  and CUSTOMIZE_OPENCODE_SKILL_DESCRIPTION). The body below becomes the\n  skill's content.\n-->\n\n# Customizing opencode\n\nopencode validates its own config strictly and refuses to start when a field\nis wrong. The shapes below cover the common surface area, but they are a\n**summary, not the source of truth**.\n\n## Full schema reference\n\nThe authoritative list of every config option — with field types, enums,\ndefaults, and descriptions — lives in the published JSON Schema:\n\n**<https://opencode.ai/config.json>**\n\nIf a field is not documented in this skill, or you need to confirm an exact\nshape before writing config, **fetch that URL and read the schema directly**\nrather than guessing. opencode hard-fails on invalid config, so the cost of a\nwrong shape is a broken startup.\n\nIndependently, every `opencode.json` should declare\n`\"$schema\": \"https://opencode.ai/config.json\"` so the user's editor catches\nmistakes as they type.\n\n## Applying changes\n\nConfig is loaded once when opencode starts and is not hot-reloaded. After\nsaving changes to `opencode.json`, an agent file, a skill, a plugin, or any\nother config-time file, **tell the user to quit and restart opencode** for\nthe changes to take effect. The running session will keep using the\nalready-loaded config until then.\n\n## Where files live\n\n| Scope                         | Path                                                                                                                      |\n| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |\n| Project config                | `./opencode.json`, `./opencode.jsonc`, or `.opencode/opencode.json` (opencode walks up from the cwd to the worktree root) |\n| Global config                 | `~/.config/opencode/opencode.json` or `~/.config/opencode/opencode.jsonc` (NOT `~/.opencode/`)                            |\n| Project agents                | `.opencode/agent/<name>.md` or `.opencode/agents/<name>.md`                                                               |\n| Global agents                 | `~/.config/opencode/agent(s)/<name>.md`                                                                                   |\n| Project commands              | `.opencode/command/<name>.md` or `.opencode/commands/<name>.md`                                                           |\n| Global commands               | `~/.config/opencode/command(s)/<name>.md`                                                                                 |\n| Project skills                | `.opencode/skill(s)/<name>/SKILL.md`                                                                                      |\n| Global skills                 | `~/.config/opencode/skill(s)/<name>/SKILL.md`                                                                             |\n| External skills (auto-loaded) | `~/.claude/skills/<name>/SKILL.md`, `~/.agents/skills/<name>/SKILL.md`                                                    |\n\nConfigs from each scope are deep-merged. Project overrides global. Unknown\ntop-level keys in `opencode.json` are rejected with `ConfigInvalidError`.\n\n## opencode.json\n\nEvery field is optional.\n\n```json\n{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"username\": \"string\",\n  \"model\": \"provider/model-id\",\n  \"small_model\": \"provider/model-id\",\n  \"default_agent\": \"agent-name\",\n  \"shell\": \"/bin/zsh\",\n  \"logLevel\": \"DEBUG\" | \"INFO\" | \"WARN\" | \"ERROR\",\n  \"share\": \"manual\" | \"auto\" | \"disabled\",\n  \"autoupdate\": true | false | \"notify\",\n  \"snapshot\": true,\n  \"instructions\": [\"AGENTS.md\", \"docs/style.md\"],\n\n  \"skills\": {\n    \"paths\": [\".opencode/skills\", \"/abs/path/to/skills\"],\n    \"urls\": [\"https://example.com/.well-known/skills/\"]\n  },\n\n  \"references\": {\n    \"docs\": {\n      \"path\": \"../docs\",\n      \"description\": \"Use for product behavior and documentation conventions\"\n    },\n    \"sdk\": {\n      \"repository\": \"owner/sdk\",\n      \"branch\": \"main\",\n      \"description\": \"Use for SDK implementation details\",\n      \"hidden\": true\n    }\n  },\n\n  \"agent\": {\n    \"my-agent\": {\n      \"model\": \"anthropic/claude-sonnet-4-6\",\n      \"mode\": \"subagent\",\n      \"description\": \"...\",\n      \"permission\": { \"edit\": \"deny\" }\n    }\n  },\n\n  \"command\": {\n    \"deploy\": { \"description\": \"...\", \"template\": \"...\" }\n  },\n\n  \"provider\": {\n    \"anthropic\": { \"options\": { \"apiKey\": \"...\" } }\n  },\n  \"disabled_providers\": [\"openai\"],\n  \"enabled_providers\": [\"anthropic\"],\n\n  \"mcp\": {\n    \"playwright\": {\n      \"type\": \"local\",\n      \"command\": [\"npx\", \"-y\", \"@playwright/mcp\"],\n      \"enabled\": true,\n      \"environment\": {}\n    },\n    \"remote-thing\": {\n      \"type\": \"remote\",\n      \"url\": \"https://...\",\n      \"headers\": { \"Authorization\": \"Bearer ...\" }\n    }\n  },\n\n  \"plugin\": [\n    \"opencode-gemini-auth\",\n    \"opencode-foo@1.2.3\",\n    \"./local-plugin.ts\",\n    [\"opencode-bar\", { \"option\": \"value\" }]\n  ],\n\n  \"permission\": {\n    \"edit\": \"deny\",\n    \"bash\": { \"git *\": \"allow\", \"*\": \"ask\" }\n  },\n\n  \"formatter\": false,\n  \"lsp\": false,\n\n  \"experimental\": {\n    \"primary_tools\": [\"edit\"],\n    \"mcp_timeout\": 30000\n  },\n\n  \"tool_output\": { \"max_lines\": 200, \"max_bytes\": 8192 },\n\n  \"compaction\": { \"auto\": true, \"tail_turns\": 15 }\n}\n```\n\nShape notes worth being explicit about:\n\n- `model` always carries a provider prefix: `\"anthropic/claude-sonnet-4-6\"`.\n- `skills` is an object with `paths` and/or `urls`, not an array.\n- `references` is an object keyed by alias. Each value is a local path, Git repository, or string shorthand.\n- `agent` is an object keyed by agent name, not an array.\n- `command` is an object keyed by command name, not an array.\n- `plugin` is an array of strings or `[name, options]` tuples, not an object.\n- `mcp[name].command` is an array of strings, never a single string. `type` is required.\n- `permission` is either a string action or an object keyed by tool name.\n\n## Skills\n\nopencode's skill loader scans for `**/SKILL.md` inside skill directories. The\nfile is named `SKILL.md` exactly, and lives in its own folder named after the\nskill:\n\n```\n.opencode/skills/my-skill/SKILL.md\n```\n\nFrontmatter:\n\n```markdown\n---\nname: my-skill\ndescription: One sentence covering what this skill does AND when to trigger it. Front-load the literal keywords or filenames the user is likely to say.\n---\n\n# My Skill\n\n(skill body in markdown: instructions, examples, references)\n```\n\n- `name` is required, lowercase hyphen-separated, up to 64 chars, and matches the folder name.\n- `description` is effectively required: skills without one are filtered out and never surfaced to the model. Cover both _what_ the skill does and _when_ to use it. Write in third person (\"Use when...\", not \"I help with...\"). Front-load concrete trigger keywords and filenames; gate with \"Use ONLY when...\" if the skill should stay quiet on adjacent topics.\n- Optional: `license`, `compatibility`, `metadata` (string-string map).\n\nRegister skills from non-default locations via `skills.paths` (scanned\nrecursively for `**/SKILL.md`) and `skills.urls` (each URL serves a list of\nskills).\n\n## References\n\nReferences make local directories and Git repositories outside the active\nproject available as supporting context. Configure them under `references`,\nkeyed by the alias used in `@` autocomplete:\n\n```json\n{\n  \"references\": {\n    \"docs\": {\n      \"path\": \"../product-docs\",\n      \"description\": \"Use for product behavior and terminology\"\n    },\n    \"effect\": {\n      \"repository\": \"Effect-TS/effect\",\n      \"branch\": \"main\",\n      \"description\": \"Use for Effect implementation details\"\n    }\n  }\n}\n```\n\nLocal `path` values may be relative to the declaring config, absolute, or use\n`~/`. Git `repository` values accept Git URLs, host/path references, and GitHub\n`owner/repo` shorthand; `branch` is optional. Both forms support optional\n`description` and `hidden` fields.\n\n- Only references with a `description` are advertised to agents in system context.\n- `hidden: true` removes a reference from TUI `@` autocomplete only. It remains available to agents and by direct path.\n- Reference directories are automatically allowed through the external-directory boundary; normal read/edit/tool permissions still apply.\n- String shorthand is supported: use `\"docs\": \"../docs\"` for local paths or `\"effect\": \"Effect-TS/effect\"` for Git repositories.\n\n## Agents\n\nTwo ways to define an agent. Use the file form for anything non-trivial.\n\n### Inline (in `opencode.json`)\n\n```json\n{\n  \"agent\": {\n    \"my-reviewer\": {\n      \"description\": \"Reviews PRs for style violations.\",\n      \"mode\": \"subagent\",\n      \"model\": \"anthropic/claude-sonnet-4-6\",\n      \"permission\": { \"edit\": \"deny\", \"bash\": \"ask\" },\n      \"prompt\": \"You are a strict PR reviewer...\"\n    }\n  }\n}\n```\n\n### File\n\n```\n.opencode/agent/my-reviewer.md      OR     .opencode/agents/my-reviewer.md\n```\n\n```markdown\n---\ndescription: Reviews PRs for style violations.\nmode: subagent\nmodel: anthropic/claude-sonnet-4-6\npermission:\n  edit: deny\n  bash: ask\n---\n\nYou are a strict PR reviewer. Focus on...\n```\n\nThe file body becomes the agent's `prompt`. Do not also put `prompt:` in the\nfrontmatter.\n\n`mode` is one of `\"primary\"`, `\"subagent\"`, `\"all\"`.\n\nAllowed top-level frontmatter fields: `name, model, variant, description, mode,\nhidden, color, steps, options, permission, disable, temperature, top_p`. Any\nunknown field is silently routed into `options`.\n\nTo disable a built-in agent: `agent: { build: { disable: true } }`, or in a\nfile, `disable: true` in frontmatter.\n\n`default_agent` must point to a non-hidden, primary-mode agent.\n\n### Built-in agents\n\nopencode ships with `build`, `plan`, `general`, `explore`. Hidden internal agents:\n`compaction`, `title`, `summary`. To override a built-in's fields, define the\nsame key in `agent: { <name>: { ... } }`.\n\n## Commands\n\nopencode's command loader scans for `**/*.md` inside command directories. The\nfile is named after the command, and lives directly inside the `command` folder:\n\n```\n.opencode/command/deploy.md\n```\n\nFrontmatter:\n\n```markdown\n---\ndescription: One sentence describing what the command does.\nagent: build\nmodel: anthropic/claude-sonnet-4-6\n---\n\n(command body in markdown: the prompt opencode runs, with $ARGUMENTS for the user's input)\n```\n\n- `template` is the command body — everything below the frontmatter — and is required: it is the prompt opencode runs when the command is invoked. Do not also put a `template:` key in the frontmatter.\n- `$ARGUMENTS` is replaced with everything the user typed after the command; `$1`, `$2`, … pull individual positional arguments.\n- Optional: `description`, `agent`, `model`, `variant`, `subtask`.\n\n## Plugins\n\n`plugin:` is an array. Each entry is one of:\n\n```json\n\"plugin\": [\n  \"opencode-gemini-auth\",            // npm spec, latest\n  \"opencode-foo@1.2.3\",              // npm spec, pinned\n  \"./local-plugin.ts\",               // file path, relative to the declaring config\n  \"file:///abs/path/plugin.js\",      // file URL\n  [\"opencode-bar\", { \"key\": \"val\" }] // tuple form with options\n]\n```\n\nAuto-discovered plugins (no config entry needed): any `*.ts` or `*.js` file in\n`.opencode/plugin/` or `.opencode/plugins/`.\n\nA plugin module exports `default` (or any named export) of type\n`Plugin = (input: PluginInput, options?) => Promise<Hooks>`. The export is a\nfunction, not a plain object literal, and the function returns an object\n(return `{}` if there is nothing to register).\n\n```ts\nimport type { Plugin } from \"@opencode-ai/plugin\"\n\nexport default (async ({ client, project, directory, $ }) => {\n  return {\n    config: (cfg) => {\n      // cfg is the live merged config; mutate fields here.\n    },\n    \"tool.execute.before\": async (input, output) => {\n      // mutate output.args before the tool runs\n    },\n  }\n}) satisfies Plugin\n```\n\nHook surface (mutate `output` in place; return `void`):\n\n- `event(input)`: every bus event\n- `config(cfg)`: once on init with the merged config\n- `chat.message`, `chat.params`, `chat.headers`\n- `tool.execute.before`, `tool.execute.after`\n- `tool.definition`\n- `command.execute.before`\n- `shell.env`\n- `permission.ask`\n- `experimental.chat.messages.transform`, `experimental.chat.system.transform`,\n  `experimental.session.compacting`, `experimental.compaction.autocontinue`,\n  `experimental.text.complete`\n\nSpecial object-shaped (not callbacks): `tool: { my_tool: { ... } }`,\n`auth: { ... }`, `provider: { ... }`.\n\n## MCP servers\n\n`mcp:` is an object keyed by server name. Each server is discriminated by\n`type`:\n\n```json\n{\n  \"mcp\": {\n    \"playwright\": {\n      \"type\": \"local\",\n      \"command\": [\"npx\", \"-y\", \"@playwright/mcp\"],\n      \"enabled\": true,\n      \"environment\": { \"BROWSER\": \"chromium\" }\n    },\n    \"github\": {\n      \"type\": \"remote\",\n      \"url\": \"https://...\",\n      \"enabled\": true,\n      \"headers\": { \"Authorization\": \"Bearer {env:GITHUB_TOKEN}\" }\n    },\n    \"old-server\": { \"enabled\": false }\n  }\n}\n```\n\n`command` is an array of strings. `environment` sets environment variables for\na local MCP server. `type` is required. Use `enabled: false` to\ndisable a server inherited from a parent config. String values such as header\ntokens support `{env:VAR}` interpolation (and `{file:path}`); the shell-style\n`${VAR}` is not substituted.\n\n## Permissions\n\n```json\n\"permission\": {\n  \"edit\": \"deny\",\n  \"bash\": { \"git *\": \"allow\", \"rm *\": \"deny\", \"*\": \"ask\" },\n  \"external_directory\": { \"~/secrets/**\": \"deny\", \"*\": \"allow\" }\n}\n```\n\nActions: `\"allow\"`, `\"ask\"`, `\"deny\"`.\n\nPer-tool value forms: `\"allow\"` shorthand (treated as `{\"*\": \"allow\"}`), or an\nobject `{ pattern: action }`. Within an object, **insertion order matters**.\nopencode evaluates the LAST matching rule, so put broad rules first and narrow\nrules last.\n\n`permission: \"allow\"` (a string at the top level) is shorthand for \"allow\neverything\" and is rarely what the user wants.\n\nKnown permission keys: `read, edit, glob, grep, list, bash, task,\nexternal_directory, todowrite, question, webfetch, websearch, lsp, doom_loop,\nskill`. Some of these (`todowrite,\nquestion, webfetch, websearch, doom_loop`) only accept a flat\naction, not a per-pattern object.\n\n`external_directory` patterns are filesystem paths (use `~/`, absolute paths,\nor globs like `~/projects/**`).\n\nPer-agent `permission:` overrides top-level `permission:`. Plan Mode lives on\nthe `plan` agent's permission ruleset (`edit: deny *`).\n\n## Escape hatches\n\nWhen a user's config is broken and opencode won't start, these env vars help:\n\n- `OPENCODE_DISABLE_PROJECT_CONFIG=1`: skip the project's local `opencode.json`\n  and start from globals only. Run from the project directory, opencode loads,\n  the user edits the broken file, then they restart without the flag.\n- `OPENCODE_CONFIG=/path/to/file.json`: load an additional explicit config.\n- `OPENCODE_CONFIG_CONTENT='{\"$schema\":\"https://opencode.ai/config.json\"}'`:\n  inject inline JSON as a final local-scope merge.\n- `OPENCODE_DISABLE_DEFAULT_PLUGINS=1`: skip default plugins.\n- `OPENCODE_PURE=1`: skip external plugins entirely.\n- `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`,\n  `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1`: skip the external skill scans under\n  `~/.claude/` and `~/.agents/`.\n\n## When proposing edits\n\n- Validate against the schema before writing. If you are unsure of a field's\n  exact shape, or the field is not covered in this skill, fetch\n  `https://opencode.ai/config.json` and read the schema rather than guessing.\n- Preserve `$schema` and any existing fields the user did not ask to change.\n- For agent, command, skill, and plugin definitions, prefer creating new files\n  in the correct location over inlining everything in `opencode.json`.\n- If the user's existing config is malformed, point them at the env-var escape\n  hatches above so they can edit from inside opencode without breaking their\n  session.\n- After saving any config change, remind the user to quit and restart opencode\n  — running sessions keep using the already-loaded config.\n"
+  },
+  {
+    "name": "bebba-audit",
+    "description": "Use when auditing the BEBBA Healthy Food project, its architecture, code, database, WordPress integration, security, migration, functionality, or configuration. Use for evidence-based diagnosis before correction. Avoid when the task only requires implementation without an audit.\n",
+    "location": "/home/dell_pro/projects/bhf/.opencode/skills/bebba-audit/SKILL.md",
+    "content": "\n# BEBBA Audit\n\n## 1. Purpose\n\nCette skill encadre les audits techniques et fonctionnels du projet\nBEBBA Healthy Food.\n\nUn audit sert à établir l'état réel d'un système avant de décider d'une\ncorrection.\n\nIl ne doit pas devenir une modification déguisée du projet.\n\n---\n\n## 2. Audit Read-Only by Default\n\nUn audit est en lecture seule par défaut.\n\nPendant un audit :\n\n- ne pas modifier les fichiers ;\n- ne pas créer de fichiers ;\n- ne pas supprimer de fichiers ;\n- ne pas modifier la base ;\n- ne pas lancer de migration réelle ;\n- ne pas corriger directement un problème découvert ;\n- ne pas faire de commit.\n\nUne correction doit faire l'objet d'un bloc séparé.\n\n---\n\n## 3. Evidence First\n\nToute conclusion importante doit être appuyée par une preuve.\n\nChercher les preuves dans :\n\n- code source ;\n- configuration ;\n- schéma ;\n- données ;\n- tests ;\n- commandes exécutées ;\n- Git ;\n- GitHub ;\n- environnement réel lorsque accessible.\n\nNe jamais transformer une hypothèse en fait.\n\nSi une information ne peut pas être vérifiée, l'indiquer clairement.\n\n---\n\n## 4. Scope\n\nAvant de commencer :\n\n1. définir le périmètre ;\n2. définir les questions à vérifier ;\n3. identifier les fichiers ou composants concernés ;\n4. éviter d'examiner des zones sans rapport avec le périmètre.\n\nUn audit doit être proportionné à son objectif.\n\nNe pas transformer systématiquement un audit ciblé en audit complet du projet.\n\n---\n\n## 5. Classification\n\nLorsqu'un problème est trouvé, distinguer :\n\n- problème confirmé ;\n- risque probable ;\n- amélioration possible ;\n- information manquante ;\n- comportement conforme.\n\nNe pas présenter une amélioration comme une vulnérabilité ou un bug.\n\n---\n\n## 6. Severity\n\nLorsque la gravité est utile, la justifier par des éléments concrets :\n\n- impact ;\n- probabilité ou conditions nécessaires ;\n- données concernées ;\n- possibilité d'exploitation ;\n- conséquences métier ou techniques.\n\nÉviter les niveaux de gravité arbitraires.\n\n---\n\n## 7. Functional Audit\n\nLors d'un audit fonctionnel, vérifier les règles métier réelles.\n\nPour BEBBA, examiner lorsque le périmètre le demande :\n\n- clients ;\n- produits ;\n- catégories ;\n- panier ;\n- commandes ;\n- cuisine ;\n- ingrédients ;\n- stocks ;\n- livreurs ;\n- livraison ;\n- encaissement ;\n- tracking ;\n- administration ;\n- statistiques ;\n- authentification ;\n- rôles.\n\nDistinguer systématiquement :\n\n```text\nrègle métier\nvs\nimplémentation technique\nvs\ncomportement observé\n"
+  },
+  {
+    "name": "bebba-migration",
+    "description": "Use when migrating BEBBA data, application components, database structures, WordPress data, WooCommerce data, legacy JSON data, or systems between environments. Use for mapping, transformation, import, export, validation, rollback, and migration planning. Avoid when no BEBBA migration is involved.\n",
+    "location": "/home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md",
+    "content": "\n# BEBBA Migration\n\n## 1. Purpose\n\nCette skill encadre toute migration du projet BEBBA Healthy Food.\n\nElle couvre notamment :\n\n- migration de `db.json` ;\n- migration vers MySQL ;\n- migration vers WordPress ;\n- migration vers WooCommerce ;\n- migration de données clients ;\n- migration de produits ;\n- migration de commandes ;\n- migration des ingrédients ;\n- migration des stocks ;\n- migration des livreurs ;\n- migration des utilisateurs ;\n- import/export ;\n- transformation de données ;\n- synchronisation entre environnements.\n\n---\n\n## 2. Migration First Requires an Inventory\n\nAvant toute migration réelle :\n\n1. identifier la source ;\n2. identifier la destination ;\n3. inventorier les données ;\n4. identifier les relations ;\n5. identifier les contraintes ;\n6. identifier les champs obligatoires ;\n7. identifier les données historiques ;\n8. identifier les données incompatibles ;\n9. identifier les doublons ;\n10. identifier les données qui ne doivent pas être migrées.\n\nNe jamais commencer un import réel sur la seule base d'un schéma supposé.\n\n---\n\n## 3. Source of Truth\n\nPour chaque migration, préciser explicitement :\n\n- source de vérité avant migration ;\n- source de vérité pendant la préparation ;\n- destination prévue ;\n- moment où la destination devient la nouvelle source de vérité.\n\nNe jamais considérer une destination comme correcte simplement parce que\nl'import s'est terminé sans erreur.\n\n---\n\n## 4. Mapping\n\nChaque entité migrée doit disposer d'un mapping clair.\n\nPour chaque champ important, déterminer :\n\n- source ;\n- destination ;\n- type source ;\n- type destination ;\n- transformation ;\n- valeur par défaut éventuelle ;\n- traitement des valeurs nulles ;\n- traitement des valeurs invalides ;\n- conservation ou non.\n\nExemple :\n\n```text\nsource.customer.id\n        ↓\ndestination.wp_user.ID\n"
+  },
+  {
+    "name": "bebba-database",
+    "description": "Use when working on BEBBA data, database architecture, MySQL, schemas, tables, relationships, indexes, constraints, queries, data integrity, migrations, backups, or database-related changes. Avoid when the task is unrelated to BEBBA data or database concerns.\n",
+    "location": "/home/dell_pro/projects/bhf/.opencode/skills/bebba-database/SKILL.md",
+    "content": "\n# BEBBA Database\n\n## 1. Purpose\n\nCette skill encadre tout travail concernant les données et la base de données\ndu projet BEBBA Healthy Food.\n\nElle s'applique notamment à :\n\n- MySQL ;\n- schéma relationnel ;\n- tables et colonnes ;\n- clés primaires et étrangères ;\n- contraintes ;\n- index ;\n- relations entre entités ;\n- intégrité des données ;\n- requêtes SQL ;\n- transactions ;\n- concurrence ;\n- sauvegardes ;\n- restauration ;\n- import/export ;\n- migration des données ;\n- correspondance entre anciennes et nouvelles structures.\n\nLa source de vérité doit toujours être vérifiée avant toute conclusion.\n\n---\n\n## 2. Evidence First\n\nNe jamais déclarer une structure, une table, une colonne, une relation ou une\ncontrainte comme existante sur la seule base d'une affirmation d'un agent.\n\nToujours rechercher les preuves dans :\n\n- les fichiers du projet ;\n- les migrations SQL ;\n- le schéma réel ;\n- les scripts de migration ;\n- les requêtes utilisées par l'application ;\n- la base réellement connectée lorsque cela est possible ;\n- Git et GitHub lorsque l'état versionné est concerné.\n\nUne documentation ou une réponse d'un outil ne constitue pas à elle seule une\npreuve de l'état réel de la base.\n\n---\n\n## 3. Analyse avant modification\n\nAvant toute modification de base de données :\n\n1. identifier le problème exact ;\n2. identifier les tables et fichiers concernés ;\n3. vérifier les relations existantes ;\n4. vérifier les contraintes existantes ;\n5. vérifier les dépendances applicatives ;\n6. identifier les données potentiellement impactées ;\n7. déterminer si une migration est nécessaire ;\n8. définir une stratégie de retour arrière lorsque le risque le justifie.\n\nNe jamais modifier plusieurs domaines de données sans nécessité.\n\n---\n\n## 4. Intégrité des données\n\nToute conception ou modification doit préserver autant que possible :\n\n- l'unicité ;\n- la cohérence des relations ;\n- les clés étrangères ;\n- les valeurs obligatoires ;\n- les types de données ;\n- les contraintes métier ;\n- l'historique nécessaire ;\n- la traçabilité des opérations.\n\nLes suppressions doivent être analysées avec attention lorsqu'elles peuvent\ncasser des références historiques.\n\n---\n\n## 5. Transactions\n\nUtiliser une transaction lorsque plusieurs opérations doivent réussir ou\néchouer ensemble.\n\nUne opération critique ne doit pas être considérée comme atomique simplement\nparce qu'elle est exécutée rapidement ou dans une seule fonction applicative.\n\nPour chaque opération transactionnelle importante, vérifier :\n\n- quelles écritures sont incluses ;\n- quelles lectures sont nécessaires ;\n- ce qui se passe en cas d'erreur ;\n- ce qui se passe en cas de concurrence ;\n- ce qui se passe après un retry ;\n- si une opération partiellement exécutée peut laisser un état incohérent.\n\n---\n\n## 6. Conventions BEBBA\n\nPréserver les règles métier connues du projet.\n\nNotamment :\n\n- une commande peut être créée avec un statut de paiement\n  `to_collect` ;\n- `paid` signifie que l'encaissement a été confirmé ;\n- livraison et encaissement sont deux événements distincts ;\n- une commande livrée ne doit pas être considérée automatiquement comme\n  encaissée ;\n- les stocks doivent rester cohérents avec les commandes et mouvements de\n  stock ;\n- les annulations doivent être analysées concernant la restitution éventuelle\n  du stock ;\n- les identifiants de commande doivent rester traçables et uniques ;\n- les données historiques nécessaires au suivi des commandes doivent être\n  conservées.\n\nNe jamais modifier une règle métier simplement pour simplifier le schéma.\n\n---\n\n## 7. Migration de données\n\nLors d'une migration :\n\n1. établir le mapping source → destination ;\n2. identifier les champs obligatoires ;\n3. identifier les transformations ;\n4. identifier les valeurs par défaut ;\n5. identifier les données impossibles à convertir ;\n6. prévoir les contrôles de comptage ;\n7. vérifier les relations après migration ;\n8. prévoir une stratégie de rollback.\n\nUne migration réussie techniquement n'est pas nécessairement une migration\ncorrecte fonctionnellement.\n\n---\n\n## 8. Validation\n\nAprès une modification ou migration, vérifier au minimum lorsque pertinent :\n\n- nombre de lignes ;\n- identifiants uniques ;\n- références étrangères ;\n- valeurs nulles inattendues ;\n- doublons ;\n- totaux importants ;\n- relations entre commandes, clients, produits et stocks ;\n- cohérence des statuts ;\n- cohérence des montants ;\n- cohérence des mouvements de stock.\n\nLa validation doit être indépendante de l'affirmation de l'outil qui a effectué\nla modification.\n\n---\n\n## 9. Sauvegarde et rollback\n\nAvant une opération destructive ou une migration importante :\n\n- identifier la sauvegarde disponible ;\n- vérifier qu'elle est exploitable ;\n- documenter le point de retour ;\n- éviter toute opération irréversible sans nécessité.\n\nUne stratégie de rollback doit être concrète : elle doit préciser ce qui permet\nde revenir à l'état précédent.\n\n---\n\n## 10. Scope\n\nCette skill traite les données et la base.\n\nElle ne doit pas être utilisée pour :\n\n- modifier arbitrairement l'interface utilisateur ;\n- refactoriser le frontend sans rapport avec les données ;\n- modifier l'architecture WordPress sans impact database identifié ;\n- modifier les permissions sans rapport avec les données ;\n- lancer une migration réelle sans validation préalable du plan.\n\nDans ces cas, utiliser la skill spécialisée correspondante.\n\n---\n\n## 11. Minimal Change\n\nLorsqu'une correction est nécessaire :\n\n- modifier uniquement ce qui est nécessaire ;\n- ne pas effectuer de refactor global ;\n- ne pas créer de tables ou colonnes inutiles ;\n- ne pas supprimer de données sans justification ;\n- ne pas changer les noms existants sans nécessité ;\n- préserver la compatibilité applicative lorsque possible.\n\nToute modification de schéma doit être explicitement justifiée.\n\n---\n\n## 12. Reporting\n\nToute intervention importante sur la base doit pouvoir fournir :\n\n- problème identifié ;\n- tables/fichiers concernés ;\n- état avant ;\n- modification prévue ;\n- modification effectuée ;\n- preuves de validation ;\n- impact sur les données ;\n- stratégie de rollback si nécessaire.\n\nNe jamais remplacer les preuves par une simple affirmation du type :\n\n- DONE ;\n- OK ;\n- build passed ;\n- migration successful.\n\n---\n\n## 13. STOP\n\nÀ la fin d'un bloc de travail database :\n\n- ne pas enchaîner automatiquement une autre modification ;\n- présenter les preuves obtenues ;\n- signaler les éléments restant à vérifier ;\n- STOP.\n"
+  },
+  {
+    "name": "bebba-workflow",
+    "description": "Use when working on the BEBBA Healthy Food project and when a task requires audit, diagnosis, correction, validation, Git review, commit, or migration work. Triggers on files such as server.ts, server/, src/, data/, firestore.rules, security_spec.md, package.json, and future WordPress/MySQL project files. Avoid when answering general questions unrelated to auditing or modifying the BEBBA project.\n",
+    "location": "/home/dell_pro/projects/bhf/.opencode/skills/bebba-workflow/SKILL.md",
+    "content": "\n# BEBBA Workflow\n\n## Mission\n\nCette skill impose une méthode de travail contrôlée et vérifiable pour le\nprojet BEBBA Healthy Food.\n\nObjectif principal :\n\n**BLOC → AUDIT → PREUVE → STOP → CORRECTION → VALIDATION → COMMIT → VÉRIFICATION GITHUB → STOP**\n\nElle ne définit pas la logique métier de BEBBA et ne remplace pas les règles\ntechniques propres aux différentes parties du projet.\n\n---\n\n## 1. Principe fondamental\n\nNe jamais déclarer une modification correcte uniquement parce que :\n\n* un agent affirme que c'est `DONE` ;\n* AI Studio ou OpenCode (ou leur interface) affirme que c'est terminé ;\n* un message `OK`, `build passed` ou équivalent est affiché ;\n* une interface indique que l'opération est terminée ;\n* un build passe ;\n* un fichier semble correct superficiellement.\n\nToute conclusion doit être basée sur des éléments vérifiables :\n\n* contenu réel des fichiers ;\n* diff Git ;\n* résultats de commandes ;\n* tests ;\n* comportement observé ;\n* état réel du dépôt.\n\n**La preuve prime sur la déclaration de l'agent.**\n\nAI Studio, OpenCode, leur interface ainsi que leurs messages `DONE`, `OK`,\n`build passed` ou équivalents ne constituent pas, à eux seuls, une preuve de\nl'état réel du projet ou de GitHub. La preuve doit venir de l'examen réel des\nfichiers, de Git et, lorsque requis, de GitHub.\n\n---\n\n## 2. Définition du BLOC\n\nChaque intervention doit avoir un périmètre précis.\n\nUn BLOC doit définir :\n\n* l'objectif ;\n* les fichiers concernés ou la zone concernée ;\n* ce qui doit être vérifié ;\n* ce qui est explicitement hors périmètre.\n\nNe pas mélanger plusieurs corrections indépendantes dans un même BLOC.\n\nNe pas profiter d'un BLOC pour effectuer :\n\n* refactoring opportuniste ;\n* nettoyage général ;\n* changement d'architecture non demandé ;\n* amélioration esthétique non demandée ;\n* modification de fichiers hors périmètre.\n\nSi un problème supplémentaire est découvert, le signaler et le conserver\npour un BLOC ultérieur.\n\n---\n\n## 3. MODE AUDIT\n\nLorsqu'un BLOC est en phase AUDIT :\n\n* lecture seule ;\n* aucune modification de fichier ;\n* aucun commit ;\n* aucun push ;\n* aucun changement de configuration ;\n* aucune correction automatique.\n\nL'audit doit déterminer l'état réel avant toute proposition de correction.\n\nLe rapport doit identifier :\n\n1. ce qui est conforme ;\n2. ce qui est non conforme ;\n3. le niveau de gravité lorsque pertinent ;\n4. les fichiers concernés ;\n5. les lignes ou zones concernées lorsque possible ;\n6. les preuves utilisées ;\n7. les conséquences éventuelles.\n\nÀ la fin de l'audit :\n\n**STOP.**\n\nNe pas commencer la correction dans la même étape.\n\n---\n\n## 4. PREUVE\n\nUne affirmation technique doit être accompagnée de sa preuve.\n\nExemples de preuves acceptables :\n\n* extrait du fichier ;\n* résultat d'une commande ;\n* `git diff` ;\n* `git status` ;\n* résultat d'un test ;\n* résultat d'un lint/typecheck/build ;\n* comparaison avec une version Git connue ;\n* comportement réellement observé.\n\nNe jamais transformer une hypothèse en fait.\n\nSi une information n'est pas vérifiable, l'indiquer clairement.\n\n---\n\n## 5. CORRECTION\n\nUne correction ne doit commencer qu'après confirmation du diagnostic et\nautorisation de poursuivre la correction.\n\nAvant de modifier :\n\n1. relire les fichiers concernés ;\n2. confirmer le problème ;\n3. confirmer le périmètre ;\n4. identifier la modification minimale nécessaire.\n\nPendant la correction :\n\n* modifier uniquement ce qui est nécessaire ;\n* conserver l'architecture existante lorsque possible ;\n* ne pas créer de nouveaux fichiers sans nécessité ;\n* ne pas modifier des fichiers hors périmètre ;\n* ne pas effectuer de refactoring global.\n\nAprès la correction, afficher exactement les fichiers modifiés.\n\n---\n\n## 6. VALIDATION\n\nLa phase VALIDATION désigne la vérification indépendante de la correction,\navant tout commit.\n\nAprès chaque correction :\n\n1. inspecter le diff ;\n2. vérifier qu'aucune modification parasite n'est présente ;\n3. exécuter les validations réellement disponibles dans le projet ;\n4. vérifier le comportement concerné lorsque possible ;\n5. comparer avec l'objectif initial du BLOC.\n\nNe jamais considérer un build seul comme une preuve fonctionnelle suffisante.\n\nSi la validation échoue :\n\n* identifier précisément l'échec ;\n* ne pas masquer l'erreur ;\n* ne pas déclarer le BLOC terminé ;\n* corriger uniquement dans le périmètre du BLOC.\n\n---\n\n## 7. GIT\n\nGit doit être vérifié avant toute création de commit.\n\nToujours contrôler :\n\n```text\ngit status\ngit diff\ngit diff --stat\n```\n\nLorsque nécessaire, vérifier également :\n\n```text\ngit log\ngit branch\ngit remote -v\n```\n\nAvant un commit :\n\n* confirmer les fichiers inclus ;\n* confirmer qu'aucun fichier parasite n'est inclus ;\n* confirmer que les secrets ou fichiers `.env` ne sont pas commités ;\n* confirmer que le diff correspond exactement au BLOC.\n\nNe jamais déclarer qu'une modification est sur GitHub simplement parce qu'elle\nexiste localement.\n\nDistinction obligatoire :\n\n**fichier modifié ≠ commit local ≠ commit poussé ≠ commit présent sur GitHub.**\n\n---\n\n## 8. COMMITS\n\nCréer un commit uniquement lorsque l'utilisateur l'autorise explicitement.\n\nL'agent ne doit jamais interpréter le workflow lui-même comme une autorisation\nimplicite de commit.\n\nLe commit doit :\n\n* correspondre à un seul BLOC cohérent ;\n* avoir un message explicite ;\n* ne contenir que les changements validés du BLOC.\n\nNe jamais mélanger plusieurs BLOCs dans un commit sans raison explicitement\nvalidée.\n\nAprès le commit, récupérer et conserver la référence du commit :\n\n```text\ngit rev-parse HEAD\n```\n\nAprès un commit validé, vérifier l'état réellement présent sur le dépôt\nGitHub avant de déclarer le bloc terminé. Cette vérification n'est pas\nlimitée au cas où un `push` est demandé.\n\nToujours distinguer :\n\n* le commit local ;\n* la référence distante (`git rev-parse origin/main` ou `git ls-remote origin main`) ;\n* le contenu réellement présent sur GitHub.\n\n---\n\n## 9. PUSH\n\nNe jamais effectuer automatiquement un `git push`.\n\nLe push est une action distincte.\n\nSi un push est demandé :\n\n1. vérifier le commit local ;\n2. pousser vers la branche demandée ;\n3. vérifier le résultat ;\n4. vérifier que le commit attendu existe réellement sur le remote.\n\nAprès vérification :\n\n**STOP.**\n\n---\n\n## 10. GitHub comme source de vérité\n\nPour BEBBA, GitHub `main` constitue la référence officielle sauf indication\ncontraire explicite.\n\nToujours distinguer :\n\n```text\nHEAD local\n↓\nbranche locale\n↓\norigin/main\n↓\nGitHub\n```\n\nNe jamais supposer qu'un état local est synchronisé avec GitHub sans le\nvérifier.\n\nLe commit `7825664` constitue la référence gelée de l'ancienne version\nFirestore du projet.\n\nCette référence ne doit pas être modifiée ou rouverte simplement pour\ncontourner un problème IAM ou Firebase déjà abandonné.\n\n---\n\n## 11. Sécurité\n\nNe jamais :\n\n* afficher les valeurs de `.env` ;\n* afficher des secrets ;\n* afficher des tokens ;\n* afficher des mots de passe ;\n* committer des credentials ;\n* contourner une protection de sécurité pour accélérer une tâche.\n\nLorsqu'un fichier sensible doit être inspecté, ne montrer que les éléments\nstrictement nécessaires.\n\n---\n\n## 12. Commandes et environnement\n\nAvant d'utiliser une commande importante :\n\n* vérifier qu'elle existe dans l'environnement ;\n* vérifier son objectif ;\n* éviter les commandes destructives.\n\nPour les validations du projet, consulter d'abord `package.json` et les\nscripts réellement disponibles.\n\nNe jamais inventer une commande de test.\n\nPour les commandes destructives (`rm`, reset Git, force push, suppression de\nfichiers, etc.), demander une autorisation explicite lorsqu'elles ne sont pas\nnécessaires au périmètre déjà validé.\n\n---\n\n## 13. Skills et agents\n\nNe charger une autre skill que si elle est réellement pertinente au BLOC\ncourant.\n\nNe pas multiplier les skills inutilement.\n\nUne skill spécialisée ne doit pas modifier le périmètre du BLOC.\n\nLa skill `bebba-workflow` reste la règle de processus générale.\n\nLes règles métier, WordPress, MySQL, migration, sécurité ou tests spécifiques\ndoivent être placées dans des skills spécialisées ultérieures uniquement si\nleur création devient réellement nécessaire.\n\n---\n\n## 14. Gestion des découvertes hors périmètre\n\nSi l'analyse révèle un autre problème :\n\n* ne pas le corriger automatiquement ;\n* le documenter brièvement ;\n* indiquer le fichier concerné ;\n* indiquer pourquoi il est hors périmètre ;\n* proposer de le traiter dans un BLOC séparé.\n\nUne découverte ne devient pas automatiquement une autorisation de modification.\n\n---\n\n## 15. Format de fin obligatoire\n\nÀ la fin de chaque BLOC, produire un état clair :\n\n```text\nBLOC : <nom>\n\nÉTAT :\n- conforme / non conforme / corrigé / bloqué\n\nPREUVES :\n- <preuve 1>\n- <preuve 2>\n\nFICHIERS :\n- <fichier 1>\n- <fichier 2>\n\nGIT :\n- <état Git réel>\n\nCOMMIT :\n- <référence du commit (SHA)>\n\nACTION SUIVANTE :\n- <prochaine étape>\n\nSTOP.\n```\n\nNe pas continuer automatiquement vers le BLOC suivant.\n\n---\n\n## 16. Règle absolue\n\nEn cas de doute :\n\n**NE PAS MODIFIER.**\n\nLire.\nVérifier.\nProuver.\nDélimiter.\nPuis seulement modifier.\n\nLe workflow doit toujours privilégier :\n\n**contrôle humain + preuve technique + modification minimale + traçabilité Git.**\n\n"
+[0m
+[0m← [0mWrite .opencode/skills/bebba-migration/SKILL.md
+Wrote file successfully.
+[0m
+État avant confirmé : fichier tronqué à 89 lignes, bloc Markdown non fermé, `bebba-migration` chargé mais incomplet. Je reconstruis maintenant le fichier.
+[0m$ [0mwc -l -c .opencode/skills/bebba-migration/SKILL.md && sha256sum .opencode/skills/bebba-migration/SKILL.md
+698 13262 .opencode/skills/bebba-migration/SKILL.md
+236dd01ce267259a80a7b7556fb7b82a28d92f7af44df5423542676fcba5f3b4  .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0mpython3 -c "
+import yaml, re
+text = open('.opencode/skills/bebba-migration/SKILL.md').read()
+fm = text.split('---',2)[1]
+d = yaml.safe_load(fm)
+print('YAML OK:', d['name'], '| desc ok:', bool(d['description']))
+fences = re.findall(r'^\s*\`\`\`', text, re.M)
+print('fences count:', len(fences), '(even = closed)')
+open_blocks = re.findall(r'^(\s*)\`\`\`\w*$', text, re.M)
+print('last fence line is closing context ok:', len(fences)%2==0)
+print('file ends with newline:', text.endswith(chr(10)))
+for name, star, ls in zip(['underline-h2'], ['----'], [text]): pass
+print('endswith STOP.:', text.rstrip().endswith('STOP.'))
+" 2>&1
+YAML OK: bebba-migration | desc ok: True
+fences count: 38 (even = closed)
+last fence line is closing context ok: True
+file ends with newline: False
+endswith STOP.: True
+[0m
+Validation technique :
+[0m$ [0mopencode debug skill 2>&1 | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+m = [s for s in data if s['name']=='bebba-migration']
+assert m, 'NOT FOUND'
+s = m[0]
+print('detected:', s['name'])
+print('location:', s['location'])
+print('description ok:', 'migrating' in s['description'] and 'Avoid when no BEBBA migration is involved' in s['description'])
+print('content bytes:', len(s['content']))
+c = s['content']
+print('content ends with STOP.:', c.rstrip().endswith('STOP.'))
+print('fence balance in content:', c.count(chr(96)*3) % 2 == 0)
+"
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    data = json.load(sys.stdin)
+  File "/usr/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Unterminated string starting at: line 42 column 16 (char 59300)
+[0m
+Le JSON d'`opencode debug skill` a été tronqué dans la sortie. Je le capture en fichier pour l'analyser correctement, et j'ajoute le retour de ligne final manquant.
+[0m$ [0mprintf '\n' >> .opencode/skills/bebba-migration/SKILL.md
+opencode debug skill > /tmp/opencode/skills.json 2>&1; echo "rc=$?"; wc -c /tmp/opencode/skills.json
+rc=0
+69844 /tmp/opencode/skills.json
+[0m
+[0m$ [0mpython3 -c "
+import json
+data = json.load(open('/tmp/opencode/skills.json'))
+names = [s['name'] for s in data]
+print('all skills:', names)
+s = [s for s in data if s['name']=='bebba-migration']
+assert s, 'NOT DETECTED'
+s = s[0]
+c = s['content']
+print('detected:', s['name'])
+print('location:', s['location'])
+print('desc ok:', 'migrating' in s['description'] and 'Avoid when no BEBBA migration is involved' in s['description'])
+print('content bytes:', len(c))
+print('content ends STOP.:', c.rstrip().endswith('STOP.'))
+print('fence balance:', c.count(chr(96)*3) % 2 == 0)
+print('has Transformation:', '## 5. Transformation' in c)
+print('has IDs et relations:', '## 6. IDs et relations' in c)
+print('has business rules:', '## 7. Règles métier BEBBA à préserver' in c)
+print('has Idempotence:', '## 9. Idempotence' in c)
+print('has Dry-run:', '## 13. Dry-run' in c)
+print('has Frontières:', '## 16. Frontières entre skills' in c)
+print('has Preuve:', '## 17. Preuve avant action' in c)
+print('has STOP section:', '## 19. STOP' in c)
+"
+all skills: ['customize-opencode', 'bebba-audit', 'bebba-migration', 'bebba-database', 'bebba-security', 'bebba-wordpress', 'bebba-testing', 'bebba-workflow']
+detected: bebba-migration
+location: /home/dell_pro/projects/bhf/.opencode/skills/bebba-migration/SKILL.md
+desc ok: True
+content bytes: 12545
+content ends STOP.: True
+fence balance: True
+has Transformation: True
+has IDs et relations: True
+has business rules: True
+has Idempotence: True
+has Dry-run: True
+has Frontières: True
+has Preuve: True
+has STOP section: True
+[0m
+[0m$ [0mwc -l -c .opencode/skills/bebba-migration/SKILL.md && sha256sum .opencode/skills/bebba-migration/SKILL.md
+699 13263 .opencode/skills/bebba-migration/SKILL.md
+4ca00bdf2c8e63b459aa654e97eb2de17f027b70f9989c7015864d953511c828  .opencode/skills/bebba-migration/SKILL.md
+[0m
+[0m$ [0mgit status --short && echo "---TRACKED DIFF---" && git diff --name-only && echo "---UNTRACKED---" && git status --porcelain
+?? .opencode/
+---TRACKED DIFF---
+---UNTRACKED---
+?? .opencode/
+[0m
+[0m→ [0mRead .opencode/skills/bebba-migration/SKILL.md[90m [offset=1, limit=18][0m
+[0m→ [0mRead .opencode/skills/bebba-migration/SKILL.md[90m [offset=690][0m
+# RAPPORT — CORRECTION `bebba-migration`
+
+## A. État avant correction
+- Lignes : **89**
+- Taille : **2186 octets**
+- SHA256 : `4b75d12999864dc3b07d84fafc2ce6984419d50f353eb2f432bf400421f58c08`
+- Problème : fichier tronqué au milieu d'un exemple de mapping (`destination.wp_user.ID`), bloc Markdown ` ```text ` non fermé, sections essentielles absentes, règles métier non protégées.
+
+## B. Corrections réalisées
+- Fermeture du bloc Markdown de la section **4. Mapping** (exemple `source.customer.id → destination.wp_user.ID` correctement clôturé).
+- Sections conservées : 1. Purpose, 2. Inventaire, 3. Source of Truth, 4. Mapping (frontmatter intact).
+- Sections reconstruites (15 ajoutées) : 5. Transformation, 6. IDs et relations, 7. Règles métier BEBBA, 8. Import/Export, 9. Idempotence, 10. Transactions et lots, 11. Synchronisation entre environnements, 12. Validation, 13. Dry-run, 14. Sauvegarde et rollback, 15. Sécurité des données liée à la migration, 16. Frontières entre skills, 17. Preuve avant action, 18. Modification minimale, 19. STOP.
+
+## C. Règles métier protégées (présence vérifiée dans §7)
+- **COD** : « Le paiement V1 est Cash on Delivery uniquement. » ✓
+- **`to_collect` / `paid`** : états définis, `paymentStatus = to_collect` à la création ✓
+- **Séparation livraison/encaissement** : « La livraison et l'encaissement sont deux événements distincts. » ✓
+- **Cycle de commande** : `received → preparing → ready → waiting_for_driver → delivering → delivered`, possibilité `cancelled` ✓
+- **Rôles** : Client, Cuisine, Livreur, Administration + accès absolu Administration/Super Admin ✓
+- **Tracking** : `trackingToken`, `bebba_last_tracking_token` ✓
+- **Stock** : quantité, coût, seuil, relations ingrédients, historique, pas de consommation/restitution implicite ✓
+- **Historique** : événements, statuts, mouvements, finances, affectations conservés ✓
+
+## D. Frontières entre Skills
+§16 répartit explicitement : migration (cette skill), database, wordpress, security, testing, audit, workflow. Aucune duplication des responsabilités détaillées ; la sécurité générale (auth/IDOR) est laissée à `bebba-security` (§15).
+
+## E. Validation technique (résultats réels)
+- **YAML** : parsable, `name = bebba-migration` (≠ dossier ✓), description valide ✓
+- **Markdown** : 38 marqueurs ` ``` ` (pairs, donc aucun bloc ouvert) ; fichier terminé par `- STOP.` + retour de ligne final ; aucune section/exemple coupé ✓
+- **OpenCode 1.18.31** : `opencode debug skill` → `bebba-migration` **détecté, chargé, parsé** (location correcte, contenu 12 545 octets, se termine par `STOP.`, fences équilibrées, toutes les sections présentes) ✓
+- **`wc`** : **699 lignes / 13 263 octets**
+- **SHA256** : `4ca00bdf2c8e63b459aa654e97eb2de17f027b70f9989c7015864d953511c828`
+- **Git** : `git diff --name-only` vide (le dossier `.opencode/` entier est non-suivi, état antérieur identique) ; `git status --short` = `?? .opencode/` (état non modifié par cette correction)
+
+## F. Fichiers modifiés
+```text
+.opencode/skills/bebba-migration/SKILL.md
+```
+Aucun autre fichier modifié par cette action.
+
+## G. Commit
+```text
+Aucun commit effectué.
+```
+
+## H. Push
+```text
+Aucun push effectué.
+```
+
+Note : découvertes hors périmètre signalées (non modifiées) — `bebba-testing/SKILL.md` et `bebba-audit/SKILL.md` présentent également une troncature similaire ; à traiter dans des BLOCS séparés.
+
+STOP — correction de bebba-migration terminée, validation indépendante requise, aucun commit effectué.
