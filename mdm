@@ -1,0 +1,240 @@
+BEBBA — BLOC 2 — MAPPING DES DONNÉES MÉTIER (Pré-audit READ-ONLY)
+Attestation : arbre Git propre vérifié (git status vide). Aucune modification, aucun SQL, aucun code, aucune migration, aucune correction.
+
+Sources : Firestore = référence théorique (inaccessible depuis ce sandbox — prouvé Bloc 1/Preuve 3 : règles isAdmin() + sortie réseau fermée) ; data/db.json (54 commandes, 173 mouvements, HEAD 5e57050) = base de contrôle chiffrée ; server/db.ts, server.ts, src/types.ts, scripts/migrate-to-firestore.ts = sémantique. Les volumes ci-dessous sont ceux de db.json, copie verbatim migrée vers Firestore (script de migration avec réconciliation bloquante). BLOC 1 (users/drivers) : non réouvert — seuls les points d'interface (FK livreur) sont cités.
+
+Collections Firestore réellement utilisées par le métier (relevé server/db.ts) : categories, products, supplements, ingredients, suppliers, orders, stockMovements, orderIdempotencyKeys, clientPhoneIndex, meta/system, meta/counters (+ users, drivers = Bloc 1). Aucune autre entité n'est inventée.
+
+1–2. ENTITÉS : volumes, champs, tables cibles, correspondances
+Conventions : legacy_id = ID Firestore conservé verbatim ; VIVANT = continue d'évoluer après migration ; FIGÉ = snapshot historique immuable ; CALC = dérivé/calculé (règle citée) ; — = sans équivalent direct (conservé en JSON brut + quarantaine si divergent).
+
+2.1 categories → bebba_categories — 9 docs
+Champ legacy (présence)	Cible	Règle
+id (9/9)	legacy_id UNIQUE NOT NULL	Verbatim. Clé d'idempotence.
+name (9/9)	name	Verbatim. VIVANT.
+slug (9/9)	slug	Verbatim. Anomalie A-CAT-1 : wraps-galettes ×2 (deux docs distincts cat-1788252897602, cat-1788252928275) → pas de contrainte UNIQUE sur slug ; doublon conservé + quarantaine pending_review.
+description (9/9)	description	Verbatim.
+icon (9/9)	icon	Verbatim.
+image (2/9), imageUrl (2/9)	image (+ legacy_image_json)	Les 2 docs porteurs ont ''/'' (vides) ; 7/9 absents → NULL autorisé, conserver l'absence (ne pas normaliser en ''). Dualité image/imageUrl : conserver les deux valeurs brutes, règle d'affichage = imageUrl || image (règle constatée dans saveCategory, db.ts).
+active (9/9, tous true)	is_active	Verbatim. VIVANT.
+order (9/9), sortOrder (5/9)	sort_order (+ legacy_order_json)	Toujours égaux quand les deux présents (0 divergence constatée) → sort_order = sortOrder ?? order, paire brute conservée. Anomalie A-CAT-2 (non bloquante) : order=3 partagé (cat-salades, cat-enfants), order=4 partagé (cat-boissons, cat-jus-detox) → pas d'UNIQUE sur l'ordre ; conserver tel quel.
+createdAt/updatedAt (5/9)	legacy_created_at / legacy_updated_at NULLables	Verbatim ; NULL = absence constatée, pas d'invention.
+Relations : parent d'aucune FK obligatoire côté enfant durci (produits : 23/23 categoryId résolus, 0 orphelin) → FK bebba_products.category_id → bebba_categories.id, NOT NULL valide sur données actuelles.
+
+2.2 suppliers → bebba_suppliers — 3 docs
+Champ legacy	Cible	Règle
+id (3/3)	legacy_id UNIQUE	Verbatim.
+name, phone, email, address (3/3)	colonnes homonymes	Verbatim. VIVANT.
+suppliedIngredients (3/3, tableau d'IDs)	Pas de colonne → relation bebba_ingredient_supplier + legacy_supplied_json	Anomalie A-SUP-1 : liste déclarative périmée/contredite par les FK réelles : sup-1 déclare 3 ingrédients mais 11 ingrédients portent supplierId=sup-1 ; sup-2 déclare 2, 3 réels (ing-dinde non déclaré) ; sup-3 cohérent (3=3). Règle : la FK ingredients.supplierId fait foi pour le vivant (17/17 résolus, supplierName cohérent 17/17) ; la liste déclarée est conservée brute (JSON) à titre historique, jamais fusionnée ni « réparée ». Table de jointure alimentée uniquement depuis supplierId ; écarts listés en quarantaine (9 lignes non-déclarés).
+2.3 ingredients → bebba_ingredients — 19 docs
+Champ legacy (présence)	Cible	Règle
+id (19/19)	legacy_id UNIQUE	Verbatim.
+name (19/19)	name	Verbatim. VIVANT.
+unit (18/19 : g, ml, piece, portion)	unit NULLable	Verbatim ; 1 absent (test-ing-kitchen-*, cf. A-STK-3). Pas de conversion d'unités (aucune règle dans le code).
+currentStock (19/19, dont 1 NULL)	stock_quantity NULLable	Snapshot vivant au jour J (base des mouvements futurs). Règle absolue : le NULL de test-ing-kitchen-* reste NULL (ne pas transformer en 0).
+minThreshold (18/19)	low_stock_threshold NULLable	Verbatim ; 1 absent → NULL.
+purchaseCost (18/19)	purchase_cost NULLable	Verbatim (DT/unité, sémantique db.ts/types). 1 absent → NULL. Sert au coût théorique (CALC, §3).
+supplierId (17/19)	FK → bebba_suppliers.id NULLable	Verbatim résolu via legacy_id ; 17/17 valides. 2 absents (ing-1788825545393, test-ing-*) → NULL.
+supplierName (18/19)	legacy_supplier_name (trace, pas de foi)	17/17 cohérents avec le fournisseur résolu ; ing-1788825545393 porte le texte libre 'marché' sans supplierId → conservé verbatim (trace historique, Anomalie A-STK-2, quarantaine).
+category (18/19, texte libre)	category_label NULLable	Verbatim, pas de table dédiée (aucune entité catégorie-ingrédient dans le code — ne pas inventer).
+active (5/19 : 4×true, 1×false)	is_active NOT NULL + legacy_active_raw NULLable	Sémantique code : active !== false = actif (db.ts partout). Règle : is_active = (active != false) ; les 14 absents → true avec legacy_active_raw=NULL conservant l'absence (pas de réécriture de l'historique : on conserve le fait que le champ était absent).
+createdAt (6/19) / updatedAt (19/19)	legacy_created_at NULLable / legacy_updated_at	Verbatim.
+Relations : référencé par recettes, suppléments, mouvements, snapshots de commandes. UNIQUE : legacy_id (+ recommandation name non-unique : 0 doublon constaté mais aucune garantie code → pas d'UNIQUE).
+
+2.4 supplements → bebba_supplements — 10 docs
+Champ legacy	Cible	Règle
+id	legacy_id UNIQUE	Verbatim.
+name, description, price (10/10)	homonymes	Verbatim. VIVANT. Prix DT.
+ingredientId (10/10)	FK → bebba_ingredients.id NULLable	Anomalie A-SUPP-1 (bloque la FK stricte) : sup-1788252897609 et sup-1788252928282 → ing-4 inexistant. Règle : FK NULLable + legacy_ingredient_id conservé ('ing-4') + 2 lignes quarantaine. Les 8 autres résolvent.
+ingredientName (10/10)	legacy_ingredient_name	0 drift vs référentiel actuel sur les 8 résolus (vérifié) ; conservé comme trace (le 'Ingrédient' générique des 2 orphelins est conservé tel quel).
+quantityConsumed (10/10) / quantity (2/10)	quantity_consumed (+ legacy_quantity_json)	Toujours égaux quand co-présents (50=50 ×2) → quantity_consumed = quantityConsumed ?? quantity, paire brute conservée. Sémantique : consommation unitaire par supplément (code computePreparationSheet : quantityConsumed || quantity || 100).
+unit (10/10)	unit	Verbatim.
+available (10/10, tous true) / isAvailable (2/10) / active (10/10, tous true)	is_available, is_active (+ legacy_flags_json)	Sémantique code : isAvailable = available != false && isAvailable != false ; active = présence catalogue. Règle : conserver les 3 bruts (JSON) + 2 booléens effectifs calculés par cette règle exacte.
+order/sortOrder (2/10), createdAt/updatedAt (2/10)	sort_order NULLable, legacy_*_at NULLables	Même règle que catégories.
+2.5 products → bebba_products (+ tables de composition, §3) — 23 docs
+Champ legacy	Cible	Règle
+id	legacy_id UNIQUE	Verbatim.
+name, description, categoryId, basePrice	name, description, category_id(FK), base_price	Verbatim. categoryId : 23/23 résolus → FK NOT NULL valide. Prix DT, VIVANT.
+imageUrl (23/23) / image (4/23)	image_url (+ legacy_image_json)	imageUrl toujours présent ; image redondant quand présent (3 URL dupliquées, 1 '') → conserver les deux bruts, affichage = imageUrl || image.
+calories, proteinGrams, carbsGrams, fatGrams (22/23)	4 colonnes NULLables	Verbatim ; absents sur prod-test-indisponible → NULL (pas de 0).
+active (23/23 tous true) / available (16/23) / isAvailable (23/23)	is_active, is_available (+ legacy_flags_json)	15×(true,true,true), 7×(true,absent,true), 1×prod-test-indisponible(true,false,false). Règle code : effectif = available != false && isAvailable != false ; active = catalogue.
+isPopular (23/23)	is_popular	Verbatim.
+order/sortOrder (16/23)	sort_order NULLable (+ paire brute)	0 divergence ; absents sur 7 anciens → NULL.
+createdAt/updatedAt (16/23)	legacy_*_at NULLables	7 absents → NULL.
+baseIngredients[] (23/23)	→ bebba_product_ingredients (§3) + snapshot brut	Anomalie A-PRD-1 : prod-1788252897607 et prod-1788252928280 référencent ing-1 (Blanc de Poulet Frais) et ing-4 (Avocat Hass), inexistants. Lignes conservées avec FK NULL + legacy_* + quarantaine (4 lignes). prod-test-indisponible : tableau vide (recette vide constatée, conservée).
+customization (23/23)	→ bebba_product_options + bebba_product_supplements (§3) + JSON brut	Détail §3. Anomalie A-PRD-2 : les 2 mêmes produits listent allowedSupplementIds=['sup-1','sup-3'] inexistants → lignes conservées avec FK NULL + quarantaine.
+2.6 orders → bebba_orders (+ lignes, §4) — 54 docs
+Détail champ par champ §4. Points structurels : id (ord-*, 54 uniques) → legacy_id UNIQUE ; orderNumber BEBBA-1047→1100, sans trou ni doublon, nextOrderSeq=1101 cohérent (vérifié arithmétiquement) → order_number UNIQUE ; trackingToken tk_*, 54 uniques, 0 absent → UNIQUE ; clientId 0/54 présent (comptes clients inexistants dans les données — voir §9 : pas de FK obligatoire) ; createdAt 54/54.
+
+2.7 stockMovements → bebba_stock_movements — 173 docs
+Détail §6. id → legacy_id UNIQUE ; type ∈ {order_consumption×171, manual_in×2} (aucun autre des types du type union StockMovementType n'apparaît dans les données : replenishment, waste, inventory_correction, manual_out, order_cancellation_restore = code-existants, données-absentes) ; ingredientId 173/173 résolus ; orderId 171/173 (2 manual_in sans commande, légitime) ; unit 172/173 (1 absent : mov-1788896746487-mce9 → NULL, cf. A-STK-3).
+
+2.8 Collections d'infrastructure Firestore (constat d'existence, pas d'entité métier inventée)
+Collection	Contenu prouvé	Mapping
+orderIdempotencyKeys	Absente de db.json (0 doc) ; le script de migration exige qu'elle soit vide après migration (idemSnap.size !== 0 → erreur bloquante) ; alimentée uniquement au runtime (createOrder: {key, callerId, requestHash, orderId, createdAt}, db.ts)	→ bebba_order_idempotency : idem_key UNIQUE, caller_id, request_hash, order_id FK NULLable→strict (une clé référence 0..1 commande), created_at. 0 ligne à migrer (vide par construction) ; table nécessaire au vivant (anti-double-commande).
+clientPhoneIndex	Absente de db.json ; dérivée ({userId, phone, normalizedPhone, name, createdAt} par client, normalisation 8 chiffres)	Données dérivées reconstructibles : ne pas figer de snapshot ; soit reconstruire post-migration depuis les comptes clients WP, soit table technique équivalente. Aucune information métier non-dérivée.
+meta/system (state), meta/counters (nextOrderSeq)	db.json ne contient que nextOrderSeq=1101 (scalaire) ; migration exige 1101 puis l'écrit en meta/counters	→ bebba_counters (counter='order_seq', next_value=1101, UNIQUE sur counter) + état système documenté hors données (pas de table system métier). Continuité : max(BEBBA-xxxx)=1100 < 1101 ✔.
+3. PRODUITS / RECETTES / OPTIONS — Analyse réelle et décision A/B
+3.1 Composition réelle constatée
+Recette catalogue : product.baseIngredients[] = {ingredientId, ingredientName, quantity, unit} (quantité pour 1 unité du produit — prouvé §5.3 : mouvements = fiche × quantité).
+Options catalogue (customization, 6 formes distinctes sur 23 produits) : proteinOptions[]/veggiesOptions[] = {label, extraPrice, extraGrams}, baseChoices[] = {label, extraPrice}, allowedSupplementIds[]. Sémantique prix : unitPrice = basePrice + extras + suppléments (code computePreparationSheet, db.ts:861+ : les valeurs proviennent exclusivement du catalogue — le serveur rejette tout label inconnu).
+Effets stock des options — HEURISTIQUES prouvées dans server/db.ts (l.938-994), à ne jamais transformer en relations certaines :
+H1 : extra protéine imputé au premier ingrédient de recette dont l'ID contient poulet|boeuf|dinde|saumon|halloumi|ing-1|ing-2|ing-3 (sous-chaîne, pas de FK).
+H2 : extra légumes imputé au premier contenant legumes|ing-4|ing-5.
+H3a/b/c : base Quinoa|Patates douces|100% Légumes (sous-chaîne du label, pas d'ID) → substitution codée en dur (ing-riz|ing-6 → ing-quinoa / ing-patate-douce ; report sur ing-legumes|ing-5). Les IDs ing-1..ing-6 n'existent pas dans les données (reliques d'un ancien référentiel).
+H4 (saveSupplement, db.ts:478) : ingrédient de repli codé en dur 'ing-legumes'.
+Icônes des summaryLines : cascades de name.includes(...) (présentation, sans foi).
+Coût théorique : CALC non stocké nulle part (aucun champ) : Σ recette.quantity × ingredients.purchaseCost + suppléments. Reproductible uniquement si recette + coûts figés ; les coûts étant vivants, tout coût recalculé après migration différera → le coût historique n'est pas une donnée prouvable (aucune colonne source) : ne pas le matérialiser comme historique ; le recalculer à la demande avec mention « coûts courants ».
+Suppléments : consommation quantityConsumed × quantité du supplément, imputée à supplement.ingredientId (relation certaine, pas heuristique — seule la valeur 100 par défaut est une convention code).
+3.2 Décision A/B — B, avec normalisation du vivant + snapshots intégraux
+A (normalisation unique) est REFUSÉE pour l'historique, preuves : (i) H1–H4 : les fiches de préparation historiques ne sont pas reconstructibles depuis le catalogue actuel (imputations par sous-chaînes + IDs fantômes ing-1..6) ; (ii) drift prouvé : fiche BEBBA-1071 porte Avocat Hass Bio 90g alors que le catalogue actuel dit Avocat frais crémeux ; (iii) produits/suppléments de commandes supprimés du catalogue (1071/1072) ; (iv) options historiques à formes hétérogènes (labels seuls {"label":"Riz"} vs triplets complets) que le code actuel rejetterait (labels inconnus du catalogue).
+Décision figée :
+Vivant normalisé : bebba_products, bebba_product_ingredients (FK NULLable + legacy_* + quantités + position), bebba_product_options (option_type ∈ {protein, veggies, base}, label, extra_price, extra_grams NULLable, position, + legacy_json), bebba_product_supplements (product_id, supplement_id NULLable + legacy_supplement_id), bebba_supplements. Heuristiques H1–H4 documentées comme règles de calcul courantes, jamais persistées comme relations.
+Historique en snapshots intégraux : chaque ligne de commande conserve sa preparationSheet (lignes + summaryLines), ses options telles que stockées (JSONB/TEXT + colonnes label extraites), ses suppléments avec tous leurs champs snapshot. Aucune FK historique vers le catalogue vivant ne remplace une valeur snapshot (FK présentes en plus, NULLables, à but de navigation).
+4. COMMANDES — Cartographie précise (54 docs)
+4.1 Table bebba_orders (1 ligne / commande)
+Champ legacy (présence)	Cible	Règle (FIGÉ sauf mention)
+id (54/54, ord-* uniques)	legacy_id UNIQUE	Verbatim.
+orderNumber (54/54, BEBBA-1047..1100 continu)	order_number UNIQUE	Verbatim. FIGÉ public.
+trackingToken (54/54, tk_* uniques)	tracking_token UNIQUE	Verbatim, FIGÉ (lien public).
+createdAt (54/54)	placed_at	Verbatim.
+client{name,phone,deliveryAddress,notes} (54/54 complets)	customer_name, customer_phone, delivery_address, customer_notes	Snapshots FIGÉS (30 couples nom/tél distincts ; aucune table client déduite — 0 clientId ; ne pas inventer bebba_customers : les comptes clients WP futurs se rattacheront par d'autres moyens, et clientId reste une FK NULLable prête mais vide).
+clientId (0/54)	wp_customer_id NULLable (FK future, vide)	Absence conservée (NULL ≠ 0).
+subtotal (54/54, 20 NULL)	subtotal NULLable	Verbatim ; NULL conservés (BEBBA-1051→1070, cf. A-ORD-1).
+deliveryFee (54/54 = 2.5)	delivery_fee	Verbatim ; constante code (db.ts:1341) mais stockée par ligne (preuve historique du barème appliqué).
+totalAmount (54/54, 20 NULL)	total_amount NULLable	Verbatim ; NULL conservés. Ne jamais recalculer (prix unitaires NULL eux aussi).
+status (7 valeurs du type union, toutes représentées)	status (ENUM restreint aux 7)	Verbatim. VIVANT pour les non-clôturées (delivered/cancelled = FIGÉES).
+paymentStatus (to_collect×51, paid×3)	payment_status (ENUM 2 valeurs)	Verbatim. Règle absolue : delivered ≠ paid — preuve BEBBA-1091 (delivered + to_collect, 17 DT) ; jamais de déduction (ni trigger, ni migration). VIVANT (encaissement post-migration).
+paymentMethod (54/54 = cash_on_delivery, seule valeur du type)	payment_method	Verbatim FIGÉ.
+assignedDriverId (10/54) / assignedDriverName (10/54)	driver_id FK NULLable + driver_name_snapshot	Double conservation : FK vers bebba_drivers via legacy_id (drv-1×8, drv-2×2, 0 orphelin) ET snapshot du nom (Yassine Ben Amor×8, Amine Trabelsi×2 — valeurs actuelles concordantes, mais le snapshot fait foi pour l'historique). 44 NULL légitimes (non attribuées).
+stockConsumed (28/54 : true×20, false×8, 26 absents)	stock_consumed NULLable (3 états)	Ternary conservé : true/false/NULL (cf. A-ORD-2 : les 26 NULL ont pourtant des mouvements). Ne pas normaliser en booléen.
+statusHistory[] (54/54, 119 entrées)	→ bebba_order_status_history (§4.3)	Snapshot ordonné.
+items[] (54/54, 56 lignes)	→ bebba_order_items (§4.2)	Snapshots.
+Idempotency key : aucune clé stockée dans la commande legacy (la clé vit dans orderIdempotencyKeys, §2.8, vide dans les données) → colonne idempotency_key NULLable sur bebba_orders pour le vivant (UNIQUE, vide à la migration), sans backfill inventé.
+
+4.2 bebba_order_items (56 lignes : 47×qté 1, 9×qté 2 ; id item uniques globalement 56/56)
+Champ legacy	Cible	Règle
+id	legacy_id UNIQUE	Verbatim.
+productId (56/56)	product_id FK NULLable + legacy_product_id	A-ORD-3 : 2 orphelins (prod-1788252974684, prod-1788252958886, commandes 1072/1071) → FK NULL + quarantaine. 54 résolus.
+productName (56/56, 0 absent)	product_name_snapshot	FIGÉ (0 drift vs catalogue sur les résolus — mais le snapshot fait foi).
+quantity (56/56 ∈ {1,2})	quantity	Verbatim.
+unitPrice (56/56, 20 NULL) / itemTotalPrice (56/56, 20 NULL)	NULLables	Verbatim, NULL conservés (mêmes 20 commandes qu'A-ORD-1).
+proteinOption (11/56) / veggiesOption (7/56) / baseChoice (26/56)	*_label + *_extra_price + *_extra_grams (NULLables) + options_raw_json	Formes hétérogènes prouvées : triplets complets (code actuel) vs {"label":"Riz"}×11, {"label":"Riz Basmati"}×7, {"label":"Quinoa bio"}×2, {"label":"Poulet grillé aux herbes"}×2, {"label":"Légumes rôtis"}×2 (+ extraPrice seul sur 2). Règle : colonnes extraites NULLables + JSON brut intégral conservé (aucune normalisation destructive ; les labels historiques inconnus du catalogue actuel sont gardés).
+supplements[] (56/56 présents, 12 lignes non vides au total)	→ bebba_order_item_supplements	{supplementId→FK NULLable + legacy_id, name, price, quantity(=1 constaté), ingredientId→FK NULLable + legacy, ingredientName, quantityConsumed, unit} — snapshots intégraux. A-ORD-3bis : sup-1788252974687, sup-1788252958889 orphelins (mais snapshots complets : nom/prix/ingrédient présents) → FK NULL + quarantaine. Sémantique quantityConsumed : total ligne constaté (×1 partout ; avec qté article 2 en 1071/1072, le supplément reste ×1 — conserver sans extrapoler).
+specialInstructions (1/56)	special_instructions NULLable	Verbatim (55 NULL légitimes).
+preparationSheet{totalIngredients[], summaryLines[]} (56/56)	→ bebba_order_item_prep (1 ligne / ingrédient snapshot) + summary_lines_json sur l'item	Snapshot de recette historique (décision B) : {ingredientId→FK NULLable + legacy, ingredientName, totalQuantity (= pour 1 unité — prouvé : mouvements = fiche × qté), unit} + lignes summaryLines verbatim (0 sheet sans). A-ORD-4 : ing-fantome-inconnu (Fantôme Inconnu, 50g, BEBBA-1086, avec champs parasites category/rawQuantity/lossPercentage hors type) → FK NULL + JSON brut + quarantaine.
+4.3 bebba_order_status_history (119 entrées)
+{order_id FK, position (ordre tableau), status, label, timestamp, note (NULL si absent), author (updatedBy, NULL si absent — 7 entrées 1047–1049 sans auteur), legacy_json}. L'ordre du tableau fait foi (pas de tri par timestamp : doublons ms par conception, §5.5). Contrainte : UNIQUE(order_id, position).
+
+5. HISTORIQUE ET ANOMALIES (constatées ou prouvées — rien d'autre)
+ID	Anomalie (preuve)	Conservation	Quarantaine	Bloque le gel ?
+A-ORD-1	Montants NULL : 20 commandes BEBBA-1051→1070 (subtotal, totalAmount, unitPrice, itemTotalPrice tous NULL)	NULL conservés partout, aucune reconstitution	Oui (20 lignes amounts_null) — informatif	NON (règle NULL figée)
+A-ORD-2	stockConsumed absent avec mouvements réels : 26 commandes MISSING dont 24 avec mouvements (1050–1072 sauf 1048/1049) ; inversement false+0 mvt cohérent (8), true+mvts cohérent (20)	Ternaire true/false/NULL conservé ; les mouvements font foi pour le fait de consommation	Oui (24 lignes stock_consumed_missing_with_movements)	NON (aucune réécriture, double source conservée)
+A-ORD-3	Références orphelines commandes : produits prod-1788252974684 (1072), prod-1788252958886 (1071) ; suppléments sup-1788252974687, sup-1788252958889 (snapshots complets par ailleurs)	FK NULL + legacy_* + snapshots intégraux	Oui (4 lignes)	NON (FK NULLables prévues)
+A-ORD-4	Ingrédient fantôme : ing-fantome-inconnu + champs hors-type (category, rawQuantity, lossPercentage), BEBBA-1086	JSON brut intégral, FK NULL	Oui (1 ligne)	NON
+A-ORD-5	Historique incohérent BEBBA-1095 : status=ready mais historique = [received] seul, stockConsumed=false, 0 mouvement	Tel quel (statut + historique conservés indépendamment, pas de reconstruction d'étapes)	Oui (1 ligne status_without_history)	NON
+A-ORD-6	Répétitions preparing→preparing : BEBBA-1084 (En cuisson→Deuxième tentative), BEBBA-1079 (+Tentative Doublon)	Entrées conservées (ce sont des écritures réelles, auteurs distincts)	Non (pas une divergence : traçabilité d'écrasements réels)	NON
+A-ORD-7	Sauts ready→delivering : 1047, 1059, 1067 (sans waiting_for_driver)	Conservés : ancien workflow prouvé (commandes 01/09, avant la transition auto ready→waiting_for_driver du code actuel db.ts) — pas une corruption	Non (variante historique documentée)	NON
+A-ORD-8	Doublons preparing + annulation avec stock consommé : BEBBA-1079 (cancelled, stockConsumed=true, 4 mouvements, to_collect, aucun mouvement de restauration)	Tel quel ; aucun mouvement compensatoire inventé (le type order_cancellation_restore existe dans le code mais 0 occurrence en données)	Oui (1 ligne cancelled_with_consumption_no_restore)	NON (lacune documentée, pas comblée)
+A-STK-1	Historique mouvements incomplet BEBBA-1047 : fiche 5 lignes (poulet 300, riz 150, légumes 280, avocat 80, sauce 35) vs 2 mouvements (poulet −300, riz −150)	Tel quel	Oui (1 ligne partial_movements)	NON
+A-STK-2	Fournisseur texte libre : ing-1788825545393.supplierName='marché', sans supplierId	Verbatim en trace, FK NULL	Oui (1 ligne)	NON
+A-STK-3	Ingrédient test incomplet : test-ing-kitchen-* (active:false, currentStock: NULL, sans unit/minThreshold/purchaseCost/category, 1 mouvement manual_in +10 sans unit)	Tous NULL conservés (y compris stock) ; mouvement sans unité conservé	Oui (2 lignes)	NON
+A-CAT-1	Slug dupliqué wraps-galettes ×2 (2 catégories distinctes)	Pas d'UNIQUE sur slug, les 2 docs migrés	Oui (1 ligne)	NON
+A-CAT-2	order partagés (3×2, 4×2)	Pas d'UNIQUE sur l'ordre	Non (tri non strict par conception)	NON
+A-SUP-1	Suppliers déclaratifs périmés : suppliedIngredients sous-déclare (sup-1 : 3 vs 11 réels ; sup-2 : 2 vs 3)	FK supplierId fait foi (vivant) + liste brute conservée (historique)	Oui (9 lignes supplier_link_undeclared)	NON
+A-SUPP-1	Suppléments orphelins : sup-1788252897609, sup-1788252928282 → ing-4 inexistant (+ ingredientName='Ingrédient' générique)	FK NULL + legacy_ingredient_id='ing-4' + quarantaine	Oui (2 lignes)	NON
+A-PRD-1/2	Produits à références fantômes : prod-1788252897607, prod-1788252928280 → ing-1/ing-4, sup-1/sup-3 inexistants ; prod-test-indisponible à recette vide + sans nutrition	Lignes conservées, FK NULL + legacy_* + quarantaine (6 lignes) ; recette vide et NULLs conservés	Oui	NON
+—	Timestamps ms identiques (6 commandes, paires ready/waiting_for_driver)	Non-anomalie : écriture atomique double prouvée dans updateOrderStatus (db.ts) → conserver, ordre tableau faisant foi	Non	NON
+—	Compteurs	nextOrderSeq=1101 = max+1 exact, aucune anomalie (note : resetDemoData mentionne 1001 dans un commentaire/setDoc défensif — code de reset, pas l'état migré ; sans effet sur le gel)	Non	NON
+Total quarantaine métier prévisible : ~66 lignes, toutes pending_review, aucune bloquante (chaque cas a une règle de conservation sans perte ni invention).
+
+6. STOCK
+6.1 bebba_stock_movements (173 lignes)
+Champ legacy	Cible	Règle
+id	legacy_id UNIQUE	Verbatim.
+type (order_consumption×171, manual_in×2)	movement_type (ENUM restreint aux valeurs constatées ; les autres valeurs du type union restent autorisées pour le vivant)	Verbatim.
+ingredientId (173/173 résolus)	ingredient_id FK NOT NULL valide (0 orphelin — y compris le mouvement test)	Résolu via legacy_id.
+ingredientName (173/173)	ingredient_name_snapshot	FIGÉ (trace au moment du mouvement).
+quantity signée (173/173 ; conso ≤ 0 vérifié : 0 positive ; manual_in ≥ 0 vérifié)	quantity (signée, convention conservée : − = sortie, + = entrée)	Verbatim. Aucune colonne entrée/sortie séparée (le signe est la donnée source ; le dériver en plus = redondance, pas de foi).
+unit (172/173)	unit NULLable	1 NULL conservé (A-STK-3).
+orderId (171/173) / orderNumber (171/173)	order_id FK NULLable + order_number_snapshot	171/171 résolus, 0 orphelin ; 2 NULL légitimes (manual_in hors commande).
+notes (173/173)	notes	Verbatim (motifs constatés : Préparation commande #BEBBA-x (…​), Test …, Réception livraison …).
+timestamp (173/173)	moved_at	Verbatim.
+performedBy (173/173)	author (texte libre)	Verbatim, pas de FK (valeurs : Cuisine BEBBA, Chef …, BEBBA KDS Moteur Automatique, noms de test… — identités non résolubles en users).
+Coût	AUCUNE source (aucun champ coût dans les mouvements)	Pas de colonne coût inventée. Coût valorisé = CALC à la demande (quantity × purchaseCost courant, documenté comme tel).
+UNIQUE : legacy_id. Index : (ingredient_id, moved_at), (order_id).
+
+6.2 Stock initial : NON reconstructible — et c'est acté
+Preuve : BEBBA-1047 (3 lignes de fiche sans mouvements) + 26 commandes stockConsumed absent + 9 ingrédients sans aucun mouvement + 2 manual_in orphelins d'historique ⇒ toute « ouverture » arithmétique (stock − Σ mouvements, calculable : ex. poulet → 3800) serait un artefact non prouvable. Décision figée : AUCUN mouvement d'ouverture inventé. Règle : bebba_ingredients.stock_quantity = solde d'ouverture snapshot au jour J (NULL conservé pour le test) ; bebba_stock_movements = historique tel quel ; la lacune est documentée par (i) la quarantaine A-STK-1/A-ORD-2/A-ORD-8, (ii) une note de migration « soldes d'ouverture non reconstituables depuis l'historique », (iii) les snapshots bruts. Tout rapprochement comptable ultérieur partira des soldes migrés, pas d'une reconstitution.
+
+7. IDENTIFIANTS ET IDEMPOTENCE (métier)
+Table cible	legacy_id conservé	UNIQUE	FK	Stratégie rejouée
+bebba_categories	id	legacy_id	—	Lookup legacy_id → SKIP si présent
+bebba_suppliers	id	legacy_id	—	Idem
+bebba_ingredients	id	legacy_id	supplier_id→suppliers (NULLable)	Idem ; FK résolue via map
+bebba_supplements	id	legacy_id	ingredient_id→ingredients (NULLable, A-SUPP-1)	Idem
+bebba_products	id	legacy_id	category_id→categories (NOT NULL, 0 orphelin)	Idem
+bebba_product_ingredients	paire (product_legacy, ingredient_legacy, position)	UNIQUE(product_id,position) + UNIQUE(product_id,legacy_ingredient_id)	product_id NOT NULL ; ingredient_id NULLable (A-PRD-1)	Idem par clé composite legacy
+bebba_product_options	(product_legacy, option_type, position)	UNIQUE(product_id,option_type,position)	product_id NOT NULL	Idem
+bebba_product_supplements	(product_legacy, supplement_legacy)	UNIQUE(product_id,legacy_supplement_id)	product_id NOT NULL ; supplement_id NULLable (A-PRD-2)	Idem
+bebba_orders	id (ord-*)	legacy_id + order_number + tracking_token (3 UNIQUE)	driver_id→drivers NULLable ; wp_customer_id NULL (vide)	Triple garde : legacy_id d'abord, order_number/tracking_token en second rideau
+bebba_order_items	id item	legacy_id + UNIQUE(order_id,legacy_id)	order_id NOT NULL ; product_id NULLable (A-ORD-3)	Idem
+bebba_order_item_supplements	(item_legacy, supplement_legacy)	UNIQUE(order_item_id,legacy_supplement_id)	order_item_id NOT NULL ; supplement_id, ingredient_id NULLables	Idem
+bebba_order_item_prep	(item_legacy, ingredient_legacy)	UNIQUE(order_item_id,legacy_ingredient_id)	order_item_id NOT NULL ; ingredient_id NULLable (A-ORD-4)	Idem
+bebba_order_status_history	(order_legacy, position)	UNIQUE(order_id,position)	order_id NOT NULL	Idem (ordre tableau, pas timestamp)
+bebba_stock_movements	id (mov-*)	legacy_id	ingredient_id NOT NULL (0 orphelin) ; order_id NULLable (2 légitimes)	Idem
+bebba_order_idempotency	key (vide à migrer)	idem_key	order_id NULLable→1	Table vivante vide ; idempotence native du vivant
+bebba_counters	counter='order_seq'	counter	—	next_value=1101 + garde max+1
+bebba_migration_map (Bloc 1) suffit-elle ? OUI, avec une extension strictement définie, sans nouvelle table : ajouter legacy_type ∈ {…, 'category','supplier','ingredient','supplement','product','order','order_item','stock_movement','counter'} + colonnes génériques target_table, target_id, raw_json, batch_id, status. La contrainte UNIQUE(legacy_type, legacy_id) couvre alors toutes les entités métier. Seules exceptions (clés composites sans legacy_id scalaire : lignes de recette/options/suppléments-produit, prep, history) : elles sont idempotées par leurs UNIQUE composites propres (ci-dessus), la map restant optionnelle pour elles (recommandée : 1 ligne par parent + raw_json du sous-arbre). Aucune table d'audit supplémentaire n'est nécessaire.
+
+8. SNAPSHOTS HISTORIQUES — Figés, jamais remplacés par des FK
+Information	Figée où	Interdiction formelle
+Nom produit commandé	bebba_order_items.product_name_snapshot	Ne jamais afficher l'historique depuis bebba_products.name
+Prix (unitaire, ligne, sous-total, total, livraison)	colonnes *_snapshot/montants NULLables	Ne jamais recalculer (20 commandes NULL)
+Recette exécutée	bebba_order_item_prep + summary_lines_json	Ne jamais régénérer depuis la recette catalogue (heuristiques H1–H4 + drift Avocat Hass Bio ≠ Avocat frais crémeux + produits supprimés)
+Options choisies	colonnes *_label/extra_* + options_raw_json	Ne jamais valider/normaliser contre le catalogue actuel (labels historiques inconnus : Riz, Quinoa bio…)
+Suppléments facturés	bebba_order_item_supplements (nom, prix, ingrédient, quantité, unité)	Idem, y compris les 2 orphelins à snapshots complets
+Livreur attribué	driver_name_snapshot (+ FK en navigation seule)	Ne jamais réafficher depuis la fiche livreur actuelle
+Client (nom, tél, adresse, notes)	4 colonnes snapshot	Aucune table client déduite ; aucune normalisation (30 identités distinctes conservées)
+Statuts	bebba_order_status_history (label, note, auteur, position)	Ne jamais reconstruire (cas 1095, répétitions, ancien workflow)
+Mouvements	bebba_stock_movements + ingredient_name_snapshot	Ne jamais régénérer depuis les fiches (1047 incomplet)
+Fournisseur déclaré	legacy_supplied_json + legacy_supplier_name	La FK fait foi pour le vivant, la trace pour l'histoire
+Règle générique : toute FK présente sur une donnée historique est un lien de navigation NULLable ; la colonne snapshot fait foi. Aucune jointure d'affichage historique ne doit lire la table vivante.
+
+9. TABLES CIBLES PROPOSÉES — Liste consolidée (17 tables, 0 créée)
+Table	Rôle	PK	legacy ID	FK	UNIQUE	Historique	Quarantaine
+bebba_categories	Catalogue catégories (9)	id	id	—	legacy_id	partiel (5/9 horodatés)	slug ×2
+bebba_suppliers	Fournisseurs (3)	id	id	—	legacy_id	liste déclarative brute	9 liens non-déclarés
+bebba_ingredients	Matières + soldes J (19)	id	id	supplier_id NULL	legacy_id	active absent→tracé	fournisseur 'marché', ingrédient test
+bebba_supplements	Suppléments catalogue (10)	id	id	ingredient_id NULL	legacy_id	flags triples bruts	2 orphelins ing-4
+bebba_products	Plats (23)	id	id	category_id NOT NULL	legacy_id	flags/images/ordres bruts	— (voir sous-tables)
+bebba_product_ingredients	Recette vivante	id	paire+position	product_id NN, ingredient_id NULL	(product_id,position), (product_id,legacy_ingredient_id)	— (vivant)	4 lignes ing-1/ing-4
+bebba_product_options	Options vivantes	id	triplet+position	product_id NN	(product_id,option_type,position)	— (vivant)	—
+bebba_product_supplements	Autorisations vivant	id	paire	product_id NN, supplement_id NULL	(product_id,legacy_supplement_id)	— (vivant)	2 lignes sup-1/sup-3 (×2 produits = 4)
+bebba_orders	Commandes (54)	id	id	driver_id NULL (Bloc 1), wp_customer_id NULL vide	legacy_id, order_number, tracking_token	statuts/montants/snapshots	20 montants NULL, 24 stockConsumed NULL+mouvements, 1095, 1079
+bebba_order_items	Lignes (56)	id	id item	order_id NN, product_id NULL	legacy_id, (order_id,legacy_id)	options hétérogènes brutes	2 produits orphelins
+bebba_order_item_supplements	Suppl. facturés (12)	id	paire	order_item_id NN, supplement_id/ingredient_id NULL	(order_item_id,legacy_supplement_id)	snapshots intégraux	2 orphelins
+bebba_order_item_prep	Fiches exécutées (~200 lignes)	id	paire	order_item_id NN, ingredient_id NULL	(order_item_id,legacy_ingredient_id)	recettes historiques + summaryLines	1 fantôme
+bebba_order_status_history	Traçabilité (119)	id	paire+position	order_id NN	(order_id,position)	labels/notes/auteurs	— (variantes documentées)
+bebba_stock_movements	Journal stock (173)	id	id	ingredient_id NN, order_id NULL	legacy_id	journal tel quel	1 partiel (1047), 1 sans unité
+bebba_order_idempotency	Anti-doublons vivant	id	key (vide)	order_id NULL	idem_key	— (0 ligne à migrer)	—
+bebba_counters	Séquences	id	counter	—	counter	next_value=1101 (vérifié = max+1)	—
+bebba_migration_map (Bloc 1, étendue §7)	Traçabilité globale	id	(legacy_type,legacy_id)	polymorphe (target_table,target_id)	(legacy_type,legacy_id)	raw_json + batch_id	support de toutes les lignes ci-dessus
+Non-tables assumées (ne pas inventer) : pas de bebba_customers (0 clientId, clients = snapshots) ; pas de bebba_couts (aucune source) ; pas de bebba_system (infra) ; pas de table clientPhoneIndex (dérivée reconstructible) ; pas de table des rôles WP livreur (Bloc 1, côté WP natif).
+
+10. CRITÈRE DE SORTIE
+Le mapping des données métier peut-il maintenant être FIGÉ sans perte d'information, sans correction arbitraire et sans hypothèse non prouvée ?
+
+Réponse : OUI.
+
+Justification point par point :
+
+Sans perte : chaque champ de chaque collection a une cible (tableau §2 + §4 + §6) ; les absences (NULL/champs manquants) sont conservées comme telles avec règles explicites (active absent→tracé, montants NULL→NULL, unités→NULL) ; les JSON bruts (legacy_*_json, raw_json, options_raw_json, summary_lines_json) capturent tout résidu (dualités image/imageUrl, order/sortOrder, quantity/quantityConsumed, flags triples, champs fantômes).
+Sans correction arbitraire : 0 valeur réécrite — les 16 anomalies (A-ORD-1→8, A-STK-1→3, A-CAT-1, A-SUP-1, A-SUPP-1, A-PRD-1/2) sont conservées + ~66 lignes de quarantaine pending_review typées ; delivered ≠ paid sanctuarisé (BEBBA-1091) ; aucun mouvement d'ouverture ou compensatoire inventé ; NULL jamais converti en 0/défaut silencieux.
+Sans hypothèse non prouvée : chaque règle de dérivation cite sa preuve (code db.ts ligné : H1–H4, prix exclusivement catalogue, transition auto ready→waiting, deliveryFee=2.5, trackingToken, compteurs ; ou arithmétique vérifiée : séquences continues 1047→1100, mouvements = fiche × quantité, 0 drift nominal constaté mais snapshots quand même imposés par les contre-preuves 1071/1086/1047). Là où la preuve manque (ouverture de stock, datation des divergences Bloc 1, stockConsumed NULL), la décision figée est l'abstention documentée (snapshot + quarantaine), pas une supposition.
+Points bloquants : aucun. Tous les cas souls par les sections 5–6 ont une règle de conservation exécutoire. La liste quarantaine (§5) constitue le plan de contrôle post-migration (effectif attendu exact : ~66 lignes) ; tout écart à ce décompte lors d'une migration d'essai signalerait une régression du pipeline, pas un défaut du mapping.
+
+STOP — FIN DU BLOC 2
+Rapport terminé. Aucune modification effectuée.
+
+
