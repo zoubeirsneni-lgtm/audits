@@ -1,0 +1,237 @@
+BLOC 6 — AUDIT FONCTIONNEL GLOBAL BEBBA (« Vos Plats santé en un clic »)
+=======================================================================
+
+Date : 2026-09-17
+Projet : /home/dell_pro/projects/bhf
+Source de vérité : GitHub zoubeirsneni-lgtm/bhf, branche main
+Type : AUDIT LECTURE SEULE (aucune modification, aucun commit, aucun push, aucune correction appliquée)
+Méthode : preuve par fichier + ligne + comportement ; aucun « DONE/OK » accepté sans contrôle sur disque.
+
+---------------------------------------------------------------------------
+1. ÉTAT GIT & INTÉGRITÉ DU DÉPÔT
+---------------------------------------------------------------------------
+- Branche : main. HEAD == origin/main == 4b082af8ce6bb9a8ee41a1ecc143f28d75bd5b16
+  (« chore(opencode): add BEBBA audit workflow infrastructure »).
+- `git status --short` : vide (working tree propre avant et après l'audit).
+- dist/ et node_modules/ ignorés par .gitignore (aucune génération effectuée).
+- Dernier historique : 4b082af ; 7825664 « freeze firestore version... » ; 35494ea etc. Aucun commit fantôme.
+- Aucun fichier créé/modifié/supprimé dans le projet BEBBA pendant l'audit.
+
+---------------------------------------------------------------------------
+2. STACK & PERSISTANCE
+---------------------------------------------------------------------------
+- Serveur : Express (server.ts, 1295 lignes) + Firestore via SDK WEB Firebase
+  (server/db.ts : imports firebase/app + firebase/firestore, pas Admin SDK) → LES RÈGLES FIRESTORE S'APPLIQUENT au serveur.
+- Frontend : React 19 + Vite (src/) ; aucune utilisation du SDK Firestore du côté client
+  (grep firebase/getFirestore dans src/ : aucune occurrence réelle ; la SPA passe exclusivement par l'API Express).
+- Persistance : Firestore (config firebase-applet-config.json) ; data/db.json (302 385 octets, 54 commandes,
+  7 users, 173 mouvements, 19 ingrédients, nextOrderSeq=1101) est la source de migration historique — COMMITÉE au repo.
+- Scripts catalogue : scripts/migrate-to-firestore.ts (verrou IN_PROGRESS → écritures batch 400 → réconciliation
+  stricte count/ID/champs critiques/absence d'invention/clientPhoneIndex/idempotencyKeys vide → READY, sinon FAILED).
+
+---------------------------------------------------------------------------
+3. MATRICE FONCTIONNELLE — VERDICT PAR DOMAINE
+---------------------------------------------------------------------------
+Verdicts : CONFIRMÉ / PARTIEL / NON CONFIRMÉ / ABSENT / ANOMALIE / NON TESTABLE.
+
+D1. Création de commande (invité + client authentifié) — CONFIRMÉ
+  - `POST /api/orders` public/authentifié server.ts:998 ; panier vide refusé db.ts:1134 ; client (nom/téléphone/adresse)
+    requis db.ts:1137-1139 ; quantités entières 1..100 db.ts:1265-1272 ; produit introuvable/inactif/indispo refusé
+    db.ts:1243-1252 ; numéro BEBBA-? db.ts:1338 ; token 'tk_'+6 octets aléatoires db.ts:1339 ; frais 2,5 db.ts:1341 ;
+    total calculé serveur db.ts:1342.
+  - Anti-spoofing clientId : le clientId du body est ignoré, remplacé par celui du JWT validé server.ts:1014-1019.
+  - Idempotence stricte : Idempotency-Key → 200 si identique (même key+caller+hash), 422 si même key+caller+contenu
+    différent, 403 si key d'un autre émetteur, 503 si Firestore indisponible server.ts:1022-1073 ; db.ts:1151-1187.
+  - Client connecté : /api/client/orders filtre par clientId db.ts:1439-1446.
+
+D2. Préparation après commande — CONFIRMÉ
+  - Départ systématique `status: 'received'`, statusHistory[0] « Commande reçue & transmise à la cuisine »
+    db.ts:1361-1373. La fiche de préparation (preparationSheet) est calculée à la commande db.ts:1254-1293.
+  - La cuisine passe received→preparing puis preparing→ready (KitchenView.handleStartPrep/handleMarkReady
+    KitchenView.tsx:107-129) ; ready → waiting_for_driver automatique côté serveur db.ts:1600-1620.
+
+D3. COD exclusif + to_collect | paid — CONFIRMÉ
+  - paymentMethod: 'cash_on_delivery', paymentStatus: 'to_collect' à la création db.ts:1363-1364 ;
+    types.ts:191-192 (union à 2 valeurs) ; règles Firestore imposent status=='received' ET paymentStatus=='to_collect'
+    à la création firestore.rules:49-55 ; checkout n'offre que « PAIEMENT À LA LIVRAISON » CheckoutModal.tsx:562-585.
+
+D4. Livraison ≠ encaissement (payment séparé) — CONFIRMÉ
+  - Endpoints distincts : PATCH /status (server.ts:1089) vs PATCH /payment (server.ts:1191).
+  - Livreur: remise physique `delivering→delivered` (auth.ts:185) puis encaissement séparé paid ; paiement avant livraison
+    impossible : paid exigé status 'delivered' server.ts:1231-1234 et db.ts:1686-1688 ; règles alignées firestore.rules:65-67.
+  - Livreur ne peut que « paid » (jamais remettre à to_collect) server.ts:1241-1244.
+
+D5. Cycle de vie des statuts (unidirectionnel, sans saut ni retour) — CONFIRMÉ
+  - allowedTransitions db.ts:1512-1520 : received→[preparing,cancelled], preparing→[ready,cancelled],
+    ready→[waiting_for_driver,cancelled], waiting_for_driver→[delivering,cancelled], delivering→[delivered,cancelled],
+    delivered:[], cancelled:[] ; message « Transition interdite » db.ts:1522-1526.
+  - isValidStatusTransition par rôle auth.ts:147-190 : admin = cycle complet + cancel, cuisine = received→preparing et
+    preparing→ready uniquement, livreur = delivering→delivered uniquement, client/admin_readonly = jamais.
+  - delivering exige un livreur attribué et actif db.ts:1528-1538, server.ts:1135-1156.
+  - Idempotence statut : même statut → retour sans effet server.ts:1114-1118.
+
+D6. Clients (inscription, login, unicité) — CONFIRMÉ
+  - register-client : nom+téléphone+mdp>=4, normalisation 8 chiffres, unicité téléphone, rôle forcé 'client',
+    ID serveur, hash bcrypt salt10 server.ts:135-175 ; createClient batch users+clientPhoneIndex db.ts:1817-1864 ;
+    updateClientProfile met à jour l'index de téléphone en batch db.ts:1866-1918.
+  - Login : client par téléphone normalisé, personnel par username (les comptes clients ne peuvent pas s'identifier par
+    username) server.ts:92-102 ; erreur générique anti-énumération server.ts:108-118 ; sanitizeUser exclut passwordHash
+    de toutes les réponses auth.ts:33-36.
+
+D7. RBAC & isolation — PARTIEL (mécanisme CONFIRMÉ ; vulnérabilités P0/P1 listées en §5)
+  - requireRole serveur auth.ts:126-140 ; chaque route protégée (inventaire 50 routes server.ts) ; UI masque selon le rôle
+    sans jamais autoriser côté client (RoleSwitcher.tsx:32-93, AppContext.recharge par rôle AppContext.tsx:740-776).
+  - Cuisine : see all except cancelled server.ts:685-690 ; Livreur : uniquement ses commandes assignées server.ts:692-701 ;
+    Admin : tout server.ts:679-683 ; admin_readonly : stats+mouvements uniquement server.ts:446,1255.
+  - Déviation : 5e rôle `admin_readonly` (types.ts:278) non documenté dans security_spec.md (qui dit « quatre profils »).
+
+D8. Cuisine / KDS — CONFIRMÉ
+  - 2 onglets (kds/stock), filtres active/ready/all, boutons « Préparation » et « Prête » KitchenView.tsx:29-129 ;
+    fiche technique (preparationSheet) affichée par commande ; gestion/restock ingrédients cuisine (admin+kitchen) routes
+    server.ts:383-443 et KitchenView restock.
+
+D9. Stock — CONFIRMÉ (atomique + journalisé + alerte)
+  - Vérification de disponibilité STRICTE avant écriture (read transactionnel de tous produits/suppléments/ingrédients,
+    cumul requiredStockMap) db.ts:1194-1335 ; InsufficientStockError → HTTP 409 détaillé server.ts:1056-1057, db.ts:47-60.
+  - Consommation immédiate à la création (stockConsumed:true) db.ts:1362 ; décrément et mouvements AVEC la commande dans
+    la MÊME transaction db.ts:1376-1427 ; rétro-compat : passage preparing consomme si non consommé db.ts:1541-1588.
+  - Journal immutable : allow update/delete:if false sur stockMovements firestore.rules:71-82.
+  - Alerte seuil : lowStockCount currentStock <= minThreshold db.ts:1723 ; RESTOCK manuel serveur server.ts:424-443.
+
+D10. Livreurs — CONFIRMÉ
+  - Création atomique livreur+compte (username unique, bcrypt) db.ts:665-721 ; admin-only server.ts:467 ; toggle
+    actif synchronisé driver/user db.ts:752+/server.ts:528 ; reset mdp admin db.ts:772+/server.ts:550 ;
+    delete bloqué si commandes historiques (recommandation désactivation) db.ts:794.
+  - Attribution : admin uniquement — via assign-driver server.ts:1174-1188 ou au passage delivering server.ts:1132-1134 ;
+    livreur ne peut jamais s'auto-attribuer (auth.ts:184) ; livreur inactif bloqué db.ts:1535,1659.
+
+D11. Tracking public & confidentialité — CONFIRMÉ (+ P3 fallback démo)
+  - GET /api/orders/track/:token public, projection masquée formatPublicOrder server.ts:764-803 (nom → prénom + initiale,
+    téléphone → « 98 ••• •10 », adresse → quartier uniquement, nom livreur révélé seulement delivering/delivered).
+  - Token haute entropie 48 bits db.ts:1339 ; lookup orderNumber+phone avec rate-limit mémoire 5 échecs/10 min par IP
+    server.ts:836-889 (429 avec temps de blocage).
+  - Récupération de commande : comparaison par numéro normalisé + 8 derniers chiffres du téléphone db.ts:1461-1489.
+  - P3 : fallback localStorage 'tk_bebba_1047_demo' AppContext.tsx:309 — cette commande de démo existe dans db.json
+    (BEBBA-1047, « delivering », Sami Khelifi) ; un visiteur sans token verrait automatiquement cette commande de démo
+    (données masquées, mais confusion/divulgation d'une commande démo).
+
+D12. Catalogue & produits — CONFIRMÉ
+  - GET publics avec filtres activeOnly/availableOnly server.ts:266-276,325-334 ; écritures admin-only
+    server.ts:292-321,350-379 ; saveProduct valide nom/prix>=0/catégorie server/db.ts:563-610 ; indisponibilité du produit
+    bloquante à la commande db.ts:1247-1252 ; masquage des grammages techniques côté client clientFormatters.ts:1-47.
+
+D13. Administration — PARTIEL (voir D16 pour la limite « zéro suppression »)
+  - Dashboard stats dit. : todayOrdersCount/todayRevenue (non-cancelled), statusCounts, totalCollectedCash (paid),
+    pendingCashToCollect (non-cancelled non-payé — donc delivered non encaissé inclus), lowStockCount, top 5 produits
+    (toutes périodes) db.ts:1696-1750 ; /api/stats admin+admin_readonly server.ts:1255.
+  - reset-demo-data admin, défensif (staff critiques requis, catalogue non vide, remise counters 1001 + 17 ingrédients
+    nominaux, suppressions soumises aux règles → rulesBlockedDeletionCount) db.ts:1983-2208.
+  - Onglets Admin (dashboard/orders/products/supplements/stock/drivers/suppliers) AdminView.tsx ; affectation livreur,
+    encaissement, changement de statut AdminView.tsx:296-383.
+
+D14. Sécurité P0-P3 — ANOMALIE (détail complet §5)
+
+D15. Qualité technique & build — PARTIEL
+  - `npm run lint` (tsc --noEmit) : EXIT 0, aucune erreur de type.
+  - BUILD non exécuté (contrainte lecture seule : dist/ serait régénéré ; dist+node_modules ignorés au git).
+  - Aucun script de test (package.json : dev/build/start/preview/clean/lint/migrate uniquement) → D17.
+
+D16. Firestore / règles / persistance — ANOMALIE (détail §5, P1-P2)
+
+D17. Tests automatisés — ABSENT
+  - Pas de répertoire test(s)/, pas de fichier *.test.*, pas de script « test » au package.json.
+
+---------------------------------------------------------------------------
+4. VÉRIFICATIONS TRANSVERSES (règles métier)
+---------------------------------------------------------------------------
+- Chaîne statuts ↔ rules Firestore : statuts listés identiques rules 60-63 ↔ types.ts:6 ↔ db.ts:1512-1520. COHÉRENT.
+- `delivered` ≠ `paid` : Dashboard comptabilise pendingCashToCollect pour tout non-cancelled non payé db.ts:1719-1720. COHÉRENT.
+- `livraison ≠ encaissement` : endpoints distincts + paid uniquement si delivered (server.ts, db.ts, rules). COHÉRENT.
+- `to_collect|paid` : types.ts:7, validation serveur server.ts:1226, rules:64. COHÉRENT.
+- Rôles : client/kitchen/driver/admin/admin_readonly (types.ts:278) — matche les sémantiques skills (leur « Admin=SuperAdmin
+  accès absolu » = role 'admin' : toutes routes admin + transitions toutes étapes + assignation livreur + encaissement). COHÉRENT.
+- Préparation après commande : 'received' initial + transitions cuisine uniquement. COHÉRENT.
+- Téléphone (>=8 chiffres) + adresse obligatoires à la commande (serveur + UI + rules). COHÉRENT.
+- Unicité du téléphone client (index clientPhoneIndex + validation avant création/mise à jour). COHÉRENT.
+
+---------------------------------------------------------------------------
+5. TRAVAUX DE SÉCURITÉ — FINDINGS P0 à P3
+---------------------------------------------------------------------------
+P0-A — Identifiants par défaut triviaux compromettables (preuve : bcrypt confirmé)
+  - data/db.json COMMITÉ contient les comptes staff avec mots de passe craqués en millisecondes :
+    usr-admin-1 (admin) = « admin », usr-kitchen-1 (cuisine) = « cuisine », usr-driver-1 (livreur1) = « livreur ».
+  - Ces comptes sont aussi les comptes officiels référencés (staffIds resetDemoData db.ts:1986) et la source migrée
+    vers Firestore (migrate-to-firestore.ts). Tout adversaire ayant accès au repo peut s'authentifier en ADMIN
+    (compromission totale : catalogue, stock, users, reset, encaissements).
+  - En parallèle, l'intention documentée de seed env (INITIAL_ADMIN_PASSWORD etc., .env.example) n'est PAS appliquée
+    (les hashes proviennent de db.json, pas de l'environnement) -> écart intention/réalisation.
+  - Recommendation (C3, hors périmètre audit) : forcer un mot de passe fort par environnement, ne jamais commiter de hash.
+
+P1-A — Règles Firestore excessivement permissives (lecture + écriture publiques) — exploitables avec la config COMMITÉE
+  - allow read: if true sur orders, users, drivers, stockMovements, ingredient, clientPhoneIndex (firestore.rules:14,21,29,
+    41,72,86,100...) → lecture publique totale de tout le SI (PII clients, historique, hashes de mots de passe) via SDK/REST.
+  - allow create sur /users : clés id+role+active+createdAt et role parmi les 5 (firestore.rules:142-151) SANS restriction
+    d'authentification → quiconque peut créer un utilisateur role:'admin' active:true (et y ajouter username/passwordHash)
+    puis se connecter via /api/auth/login. Élévation de privilège directe.
+  - allow create/update sur /orders : un client externe peut créer des commandes fictives avec totalAmount arbitraire
+    (firestore.rules:43-55) et flipper les statuts (update autorisé si statut∈liste + totalAmount inchangé, rules:56-67),
+    contournant totalement le RBAC Express (client/kitchen ne peuvent pas le faire via l'API).
+  - allow create/update /meta/system avec state ∈ [READY, NOT_STARTED, MAINTENANCE] (firestore.rules:13-18) → bascule en
+    MAINTENANCE = DoS global (fail-fast 503 sur tout /api/* server.ts:48-69).
+  - Conditions : config (projectId/kitchen DatabaseId/apiKey) présente dans le repo git COMMITÉ (firebase-applet-config.json).
+    Le serveur utilise le SDK WEB (règles appliquées), mais un attaquant réplique simplement cette config.
+
+P2-A — Hashes de mots de passe + PII commités au repo (data/db.json : 54 commandes, 7 users, 173 mouvements de stock).
+P2-B — Désalignement schéma rules↔code produits : rules exigent clé `price` (firestore.rules:120-123) alors que le code
+      écrit `basePrice` (db.ts:587) → les règles ne valident pas le vrai schéma (validation de schéma inopérante sur le champ réel).
+P2-C — Endpoints DELETE « morts » : toutes les collections sont `allow delete: if false` (firestore.rules:15...) → les routes
+      DELETE serveur (categories/products/supplements/ingredients/drivers/suppliers) échouent côté SDK web (400) alors que l'UI
+      les propose. Zéro-suppression = choix assumé (resetDemoData s'appuie dessus), mais mauvaise expérience + erreurs génériques.
+P2-D — Unités stock : restaurant de stock (POST /api/ingredients/:id/stock) accepte `news` type quelconque et quantité négative
+      sans blocage serveur : `manual_out` négatif peut créer une entrée positive ; rules interdisent currentStock<0, mais un
+      `manual_out` > stock produira un échec rules (400) — cohérent mais erreur opaque. (Observation d'ergonomie/validation.)
+P2-E — No rate-limit sur POST /api/orders (création infinie de commandes fictives/épuisement stock), contrairement à
+      track-lookup (seule limitée, server.ts:840).
+
+P3-A — Fallback token démo 'tk_bebba_1047_demo' (AppContext.tsx:309) ; P3-C compte de test `agent_test_audit`
+      (usr-1788252052142, azulejda db.json users+resetDemoData le nettoie) présent dans les données publiques.
+P3-B — Incohérences doc vs code : security_spec.md mentionne `/idempotency_keys/{key}` (mais collection réelle
+      orderIdempotencyKeys) et « 4 rôles » (types.ts:278 en définit 5, admin_readonly). package.json `name: "react-example"`.
+P3-D — Performance : getOrders/getStockMovements/getDashboardStats scannt toutes les collections, rappelées toutes les 5 s
+      par chaque session admin (AppContext.tsx:788) — non-scalable (milieu de croissance).
+
+---------------------------------------------------------------------------
+6. OBSERVATIONS QUALITÉ / ARCHITECTURE
+---------------------------------------------------------------------------
+- Bons points confirmés : atomicité transactionnelle création commande + stock + mouvements (db.ts:1376-1427) ;
+  anti-spoofing clientId ; idempotence stricte + erreurs 200/422/403/503 ; IDOR serveur (livreur/propriétaire client) ;
+  masquage tracking ; 403 explicites par rôle ; JWT_SECRET obligatoire au démarrage (auth.ts:8-14) ; hash mdp non exposé
+  dans les réponses ; journal de mouvement immutable ; cout minimaux au niveau des règles de non-négativité des stocks.
+- Points de conception à noter (non-bloquants) : catalogue « public en lecture » assumé (rules read:if true pour le menu) ;
+  fetch leaders par Stats par « factice-time » ; dates/heures de migration finales (nextOrderSeq=1101) strictes.
+
+---------------------------------------------------------------------------
+7. VERDICT GLOBAL
+---------------------------------------------------------------------------
+BLOC 6 — AUDIT FONCTIONNEL GLOBAL : VERDICT GLOBAL = ANOMALIES BLOCQUANTES (P0) / NON CONNU SUR ENVIRONNEMENT LIVE
+- Fonctionnel/Règles métier : CONFIRMÉ à 94 % (16/17 domaines conformes, mécanismes RBAC/IDOR/COD/stock/tracking en place et preuves fichier-ligne).
+- Bloquant P0 : identifiants ADMIN/CUISINE/LIVREUR par défaut triviaux COMMITÉS dans data/db.json (preuve : bcrypt
+  compare = « admin »/« cuisine »/« livreur ») — risque de compromission totale de l'environnement hébergé.
+- Haut-risque P1 : règles Firestore (lecture générale à toutes, création publique de comptes admin, verrou MAINTENANCE,
+  statuts/commandes altérables hors RBAC) + config Firestore commitée → surface d'attaque réelle et exploitable.
+- Points d'ETATION : deletes/état live non testables depuis cet environnement sans accès (l'état réel du Firestore live,
+  le déploiement Cloud Run et l'existence de JWT_SECRET ne peuvent pas être vérifiés ici → « NON TESTABLE »).
+- Aucune correction, aucun commit, aucun push, aucun fichier créé/modifié dans le projet BEBBA (git status propre).
+
+Fin : le rapport final (ce document) a été archivé dans zoubeirsneni-lgtm/audits via les commandes exactes du
+mécanisme run-prompt.sh (voir pied de rapport archivé : nom, SHA, URL). Aucun prompt temporaire n'a été créé dans
+.opencode/prompts/ (interdiction explicite de création de fichier), la génération de la sortie étant la présente session.
+
+BLOC 6 — AUDIT FONCTIONNEL GLOBAL : STOP.
+==== OPENCODE OUTPUT METADATA ====
+prompt: bloc-06-audit-fonctionnel-global
+run_date: 2026-09-17T01:10:01+0100
+report_name: opencode-output-2026-09-17-011000
+repo: zoubeirsneni-lgtm/audits
+branch: main
+opencode_exit: 0
